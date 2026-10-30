@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { PaySheet } from './components/PaySheet'
+import { ShortcutsSheet, Sidebar } from './components/Sidebar'
 import { TxEditor } from './components/TxEditor'
 import { api } from './lib/api'
 import { initNotifications, syncReminders } from './lib/notify'
+import { shortcutFor } from './lib/shortcuts'
 import type { User } from './lib/backend'
 import { Auth } from './screens/Auth'
 import { Bills } from './screens/Bills'
@@ -48,6 +50,7 @@ export function App() {
 function Shell() {
   const { editor, openEditor, closeEditor, payTarget, closePay, version, bump, canEdit } = useApp()
   const navigate = useNavigate()
+  const [help, setHelp] = useState(false)
 
   // Lembretes: abrir a tela certa ao tocar na notificação
   useEffect(() => {
@@ -69,8 +72,32 @@ function Shell() {
     return () => { h.then((x) => x.remove()).catch(() => {}) }
   }, [bump])
 
+  // Atalhos de teclado (computador)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      const action = shortcutFor({
+        key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey,
+        targetTag: el?.tagName, targetEditable: el?.isContentEditable,
+        dialogOpen: !!document.querySelector('.sheet-backdrop'),
+      })
+      if (!action) return
+      e.preventDefault()
+      if (action.type === 'new') { if (canEdit) openEditor() }
+      else if (action.type === 'help') setHelp(true)
+      else if (action.type === 'go') navigate(action.to)
+      else {
+        navigate('/lancamentos')
+        setTimeout(() => document.querySelector<HTMLInputElement>('.search input')?.focus(), 50)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [navigate, openEditor, canEdit])
+
   return (
     <div className="app">
+      <Sidebar onHelp={() => setHelp(true)} />
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -98,6 +125,7 @@ function Shell() {
         <NavLink to="/relatorios"><Icon name="chart" /><span>Relatórios</span></NavLink>
       </nav>
 
+      {help && <ShortcutsSheet onClose={() => setHelp(false)} />}
       {payTarget && <PaySheet key={payTarget.id} tx={payTarget} onClose={closePay} />}
       {editor && <TxEditor key={editor.tx?.id ?? 'new'} initial={editor.tx} initialMode={editor.mode} onClose={closeEditor} />}
     </div>

@@ -92,7 +92,7 @@ export function Home() {
           <h1 className="hello">{profile?.display_name}</h1>
           <SpaceSwitcher />
         </div>
-        <Link to="/ajustes" className="icon-btn" aria-label="Ajustes"><Icon name="gear" /></Link>
+        <Link to="/ajustes" className="icon-btn settings-link" aria-label="Ajustes"><Icon name="gear" /></Link>
       </header>
 
       <SyncBanner />
