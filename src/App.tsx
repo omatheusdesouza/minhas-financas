@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { Icon } from './components/Icon'
+import { PaySheet } from './components/PaySheet'
 import { TxEditor } from './components/TxEditor'
 import { api } from './lib/api'
 import type { User } from './lib/backend'
 import { Auth } from './screens/Auth'
 import { Bills } from './screens/Bills'
 import { Home } from './screens/Home'
+import { Onboarding } from './screens/Onboarding'
 import { Reports } from './screens/Reports'
-import { CategoriesScreen, PaymentMethodsScreen, Settings } from './screens/Settings'
+import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from './screens/Settings'
 import { Transactions } from './screens/Transactions'
 import { AppProvider, useApp } from './store'
 
@@ -28,7 +30,7 @@ export function App() {
   if (!user || recovering) return <Auth recovering={recovering} onRecoveryStart={() => setRecovering(true)} onRecovered={() => setRecovering(false)} />
 
   return (
-    <AppProvider user={user}>
+    <AppProvider user={user} onboarding={<Onboarding />}>
       <HashRouter>
         <Shell />
       </HashRouter>
@@ -37,7 +39,7 @@ export function App() {
 }
 
 function Shell() {
-  const { editor, openEditor, closeEditor } = useApp()
+  const { editor, openEditor, closeEditor, payTarget, closePay } = useApp()
   return (
     <div className="app">
       <main>
@@ -49,6 +51,7 @@ function Shell() {
           <Route path="/ajustes" element={<Settings />} />
           <Route path="/ajustes/categorias" element={<CategoriesScreen />} />
           <Route path="/ajustes/pagamentos" element={<PaymentMethodsScreen />} />
+          <Route path="/ajustes/perfil" element={<ProfileScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -61,6 +64,7 @@ function Shell() {
         <NavLink to="/relatorios"><Icon name="chart" /><span>Relatórios</span></NavLink>
       </nav>
 
+      {payTarget && <PaySheet key={payTarget.id} tx={payTarget} onClose={closePay} />}
       {editor && <TxEditor key={editor.tx?.id ?? 'new'} initial={editor.tx} initialMode={editor.mode} onClose={closeEditor} />}
     </div>
   )

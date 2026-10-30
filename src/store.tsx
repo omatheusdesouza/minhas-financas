@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api } from './lib/api'
 import type { User } from './lib/backend'
 import { CategoryIndex, generateRecurring, seedIfEmpty } from './lib/services'
-import type { Category, PaymentMethod, Transaction } from './lib/types'
+import type { Category, PaymentMethod, Profile, Transaction } from './lib/types'
 
 interface Toast {
   id: number
@@ -19,6 +19,10 @@ interface TxEditor {
 
 interface AppState {
   user: User
+  profile: Profile | null
+  /** Link temporário da foto de perfil (bucket privado) */
+  avatarUrl: string | null
+  reloadProfile: () => Promise<void>
   categories: Category[]
   idx: CategoryIndex
   paymentMethods: PaymentMethod[]
@@ -31,6 +35,10 @@ interface AppState {
   editor: TxEditor | null
   openEditor: (tx?: Partial<Transaction>, mode?: EditorMode) => void
   closeEditor: () => void
+  /** Painel "Marcar como paga" / "Informar valor" */
+  payTarget: Transaction | null
+  openPay: (t: Transaction) => void
+  closePay: () => void
 }
 
 const Ctx = createContext<AppState | null>(null)
@@ -75,7 +83,15 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[]): { data: T | u
   return { data, loading }
 }
 
-export function AppProvider({ user, children }: { user: User; children: ReactNode }) {
+export function AppProvider({ user, children, onboarding }: {
+  user: User
+  children: ReactNode
+  /** Tela mostrada enquanto o onboarding obrigatório não foi concluído */
+  onboarding: ReactNode
+}) {
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [payTarget, setPayTarget] = useState<Transaction | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [ready, setReady] = useState(false)
@@ -97,6 +113,12 @@ export function AppProvider({ user, children }: { user: User; children: ReactNod
 
   const bump = useCallback(() => setVersion((v) => v + 1), [])
 
+  const reloadProfile = useCallback(async () => {
+    const p = await api.getProfile()
+    setProfile(p)
+    setAvatarUrl(p?.avatar_path ? await api.fileUrl('avatars', p.avatar_path).catch(() => null) : null)
+  }, [])
+
   const run = useCallback(
     async <T,>(fn: () => Promise<T>, ok?: string) => {
       try {
@@ -116,27 +138,31 @@ export function AppProvider({ user, children }: { user: User; children: ReactNod
     ;(async () => {
       try {
         await prepare(user.id)
-        await reloadMeta()
+        await Promise.all([reloadMeta(), reloadProfile()])
       } catch (e: any) {
         toast(e?.message ?? String(e), 'error')
       } finally {
         setReady(true)
       }
     })()
-  }, [user.id, reloadMeta, toast])
+  }, [user.id, reloadMeta, reloadProfile, toast])
 
   const idx = useMemo(() => new CategoryIndex(categories), [categories])
 
   const value: AppState = {
-    user, categories, idx, paymentMethods, version, bump, reloadMeta, toast, run,
+    user, profile, avatarUrl, reloadProfile, categories, idx, paymentMethods, version, bump, reloadMeta, toast, run,
     editor,
     openEditor: (tx, mode) => setEditor({ tx, mode }),
     closeEditor: () => setEditor(null),
+    payTarget,
+    openPay: (t) => setPayTarget(t),
+    closePay: () => setPayTarget(null),
   }
+  const onboarded = Boolean(profile?.onboarding_completed_at)
 
   return (
     <Ctx.Provider value={value}>
-      {ready ? children : <div className="splash"><div className="spinner" /></div>}
+      {!ready ? <div className="splash"><div className="spinner" /></div> : onboarded ? children : onboarding}
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>{t.text}</div>

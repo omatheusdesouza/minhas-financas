@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CATEGORY_COLORS, CATEGORY_ICONS, LEGACY_COLOR_MAP } from '../lib/defaults'
+import { MyAvatar } from '../components/Avatar'
 import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
+import { ProfileForm, draftFrom, nameError, saveProfileDraft } from '../components/ProfileForm'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
@@ -12,7 +14,7 @@ import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
 import { useApp } from '../store'
 
 export function Settings() {
-  const { user, run } = useApp()
+  const { user, run, profile } = useApp()
   const [pwOpen, setPwOpen] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme())
 
@@ -31,17 +33,19 @@ export function Settings() {
     <div className="screen">
       <header className="top"><BackLink /><h1>Ajustes</h1><span /></header>
 
-      <section className="card">
+      <Link to="/ajustes/perfil" className="card account-card">
         <div className="account">
-          <span className="avatar"><Icon name="user" /></span>
-          <div>
-            <strong>{user.email}</strong>
+          <MyAvatar size={56} />
+          <div className="grow">
+            <strong className="account-name">{profile?.display_name}</strong>
+            <p className="muted small">{user.email}</p>
             <p className="muted small">
               {api.mode === 'cloud' ? '☁️ Dados salvos na nuvem com segurança' : '📱 Modo demonstração — dados só neste aparelho'}
             </p>
           </div>
+          <Icon name="right" className="muted" />
         </div>
-      </section>
+      </Link>
 
       <section className="card">
         <div className="card-title"><h3>Aparência</h3></div>
@@ -293,6 +297,38 @@ export function PaymentMethodsScreen() {
           {editing.id && <Toggle checked={editing.archived ?? false} onChange={(v) => setEditing({ ...editing, archived: v })} label="Arquivada" />}
         </Sheet>
       )}
+    </div>
+  )
+}
+
+export function ProfileScreen() {
+  const { profile, avatarUrl, run, reloadProfile } = useApp()
+  const nav = useNavigate()
+  const [draft, setDraft] = useState(() => draftFrom(profile, avatarUrl))
+  const [showErrors, setShowErrors] = useState(false)
+
+  async function save() {
+    setShowErrors(true)
+    if (nameError(draft.display_name)) return
+    const ok = await run(async () => {
+      await saveProfileDraft(draft, profile)
+      await reloadProfile()
+      return true
+    }, 'Perfil atualizado')
+    if (ok) nav('/ajustes')
+  }
+
+  function cancel() {
+    // foto enviada e não salva: apaga do armazenamento
+    if (draft.avatar_path && draft.avatar_path !== profile?.avatar_path) api.removeFile('avatars', draft.avatar_path).catch(() => {})
+    nav('/ajustes')
+  }
+
+  return (
+    <div className="screen">
+      <header className="top"><button className="icon-btn" aria-label="Voltar" onClick={cancel}><Icon name="left" /></button><h1>Meu perfil</h1><span /></header>
+      <section className="card"><ProfileForm value={draft} onChange={setDraft} showErrors={showErrors} /></section>
+      <button className="btn primary block" onClick={save}>Salvar</button>
     </div>
   )
 }
