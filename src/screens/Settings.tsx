@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CATEGORY_COLORS, CATEGORY_ICONS, LEGACY_COLOR_MAP } from '../lib/defaults'
@@ -21,6 +22,7 @@ export function Settings() {
   const { user, profile, sync } = useApp()
   const lock = useLock()
   const [pwOpen, setPwOpen] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme())
 
   return (
@@ -79,6 +81,15 @@ export function Settings() {
       </div>
 
       <p className="muted small center">Fynvault · Personal finance · versão 1.1 · {new Date(__APP_BUILD__).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</p>
+      {!Capacitor.isNativePlatform() && (
+        <button className="link center small" disabled={updating} onClick={async () => {
+          // busca a versão nova do site e recarrega (o app guarda uma cópia para abrir sem internet)
+          setUpdating(true)
+          const reg = await navigator.serviceWorker?.getRegistration().catch(() => undefined)
+          await reg?.update().catch(() => {})
+          setTimeout(() => location.reload(), 1500)
+        }}>{updating ? 'Atualizando…' : 'Procurar atualização do app'}</button>
+      )}
       {pwOpen && <PasswordSheet onClose={() => setPwOpen(false)} />}
     </div>
   )
