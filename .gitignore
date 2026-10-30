@@ -9,3 +9,6 @@ ios/App/Pods/
 ios/App/build/
 tsconfig.tsbuildinfo
 *.zip
+
+# Segredos locais do histórico (nunca versionar)
+docs/historico/SEGREDOS.local.md
