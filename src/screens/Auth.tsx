@@ -60,7 +60,8 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
     <div className="auth">
       <div className="auth-brand">
         <img src="./icon.svg" alt="" width={72} height={72} />
-        <h1>Minhas Finanças</h1>
+        <h1 className="brand-name">Fynvault</h1>
+        <p className="brand-tagline">Personal finance</p>
         <p className="muted">Seus gastos, ganhos e contas sob controle, todos os dias.</p>
       </div>
 

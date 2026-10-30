@@ -21,7 +21,7 @@ export function Settings() {
         api.listPlans(), api.listRecurring(),
       ])
       const data = { exported_at: new Date().toISOString(), categories, payment_methods, transactions, installment_plans, recurring_bills }
-      await saveFile(`backup_minhas_financas_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json')
+      await saveFile(`backup_fynvault_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json')
     })
   }
 
@@ -49,7 +49,7 @@ export function Settings() {
         <button className="danger-text" onClick={() => confirm('Sair da sua conta?') && api.signOut()}><Icon name="logout" /> Sair</button>
       </nav>
 
-      <p className="muted small center">Minhas Finanças · versão 1.0</p>
+      <p className="muted small center">Fynvault · Personal finance · versão 1.1</p>
       {pwOpen && <PasswordSheet onClose={() => setPwOpen(false)} />}
     </div>
   )

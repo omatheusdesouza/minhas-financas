@@ -331,3 +331,4 @@ input:disabled { opacity: .6; }
 .toasts { position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar) + var(--safe-bottom) + 14px); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; padding: 0 16px; }
 .toast { background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow); animation: up .2s; max-width: 480px; }
 .toast.error { background: var(--bad); color: #fff; }
+.brand-tagline { margin: -4px 0 4px; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); }

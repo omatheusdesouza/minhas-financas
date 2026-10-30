@@ -94,20 +94,20 @@ export function Reports() {
 
   async function exportCsv() {
     if (!r) return
-    try { await saveFile(`financas_${p.period.from}_a_${p.period.to}.csv`, csv(rowsFor(r.cur)), 'text/csv') }
+    try { await saveFile(`fynvault_${p.period.from}_a_${p.period.to}.csv`, csv(rowsFor(r.cur)), 'text/csv') }
     catch (e: any) { toast(e.message, 'error') }
   }
 
   async function exportHtml() {
     if (!r) return
-    try { await saveFile(`relatorio_${p.period.from}_a_${p.period.to}.html`, reportHtml(), 'text/html') }
+    try { await saveFile(`fynvault_relatorio_${p.period.from}_a_${p.period.to}.html`, reportHtml(), 'text/html') }
     catch (e: any) { toast(e.message, 'error') }
   }
 
   async function shareSummary() {
     if (!r) return
     const lines = [
-      `📊 Minhas Finanças — ${label}`,
+      `📊 Fynvault — ${label}`,
       `Ganhos: ${money(r.income)}`,
       `Gastos: ${money(r.expense)}`,
       `Saldo: ${money(r.income - r.expense)}`,
@@ -139,7 +139,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px
 <h2>Gastos por categoria</h2><table><tr><th>Categoria</th><th class="n">Valor</th><th class="n">%</th></tr>${table(cats, r.expense)}</table>
 <h2>Ganhos por categoria</h2><table><tr><th>Categoria</th><th class="n">Valor</th><th class="n">%</th></tr>${table(incs, r.income)}</table>
 <h2>Lançamentos</h2><table><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Sub</th><th>Pagamento</th><th class="n">Valor</th><th>Situação</th><th>Obs.</th></tr>${txs}</table>
-<p class="muted">Gerado em ${new Date().toLocaleString('pt-BR')} pelo app Minhas Finanças. Para salvar em PDF, use Imprimir › Salvar como PDF.</p>
+<p class="muted">Gerado em ${new Date().toLocaleString('pt-BR')} pelo app Fynvault. Para salvar em PDF, use Imprimir › Salvar como PDF.</p>
 </body></html>`
   }
 
