@@ -44,7 +44,6 @@ export function ContributionSheet({ goal, onClose }: { goal: SavingsGoal; onClos
           </ul>
         </Field>
       )}
-      <p className="muted small">Em breve: tela completa de metas, com histórico e gráfico.</p>
     </Sheet>
   )
 }
