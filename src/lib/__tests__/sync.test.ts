@@ -47,6 +47,7 @@ class FakeServer implements Remote {
     this.net()
     return [...this.table('transactions').values()].find((x) => x.recurring_bill_id === billId && x.recurring_month === month) ?? null
   }
+  async rowsOf(t: TableName, owner: string) { this.net(); return [...this.table(t).values()].filter((r) => r.user_id === owner) }
   list(t: string) { return [...this.table(t).values()] }
 }
 
@@ -273,5 +274,41 @@ describe('sincronizar agora', () => {
     await auto
     expect(await manual).toBe(true)
     expect(await a.data.listTransactions('2026-10-01', '2026-10-31')).toEqual([])
+  })
+})
+
+describe('modo família', () => {
+  it('baixa o espaço compartilhado e apaga do aparelho quando deixa de ser compartilhado', async () => {
+    server.rows.set('transactions', new Map([
+      ['x1', { id: 'x1', user_id: 'dona', ...tx({ description: 'Luz da Ana' }), updated_at: '2026-01-01T00:00:00Z' }],
+    ]))
+    const b = device(server, 'B')
+    await b.engine.sync()
+    await b.engine.importOwner('dona')
+    expect(b.tables.get('transactions', 'x1')).toMatchObject({ description: 'Luz da Ana' })
+    await b.engine.purgeOwner('dona')
+    expect(b.tables.get('transactions', 'x1')).toBeUndefined()
+  })
+
+  it('o que o editor cria no espaço compartilhado vai com o dono certo', async () => {
+    const tables = new Tables(memoryPersistence())
+    const db = memoryDb()
+    const engine = new SyncEngine(tables, db, server)
+    let space = 'dona'
+    const data = createLocalData(tables, {
+      changed: (t, rows) => engine.enqueue(t, 'upsert', rows),
+      removed: (t, ids) => engine.enqueue(t, 'delete', ids),
+    }, () => 'membro', () => space)
+    await data.saveTransaction(tx({ description: 'Mercado da casa' }))
+    space = 'membro'
+    await data.saveTransaction(tx({ description: 'Meu café' }))
+    await engine.sync()
+    const owners = Object.fromEntries(server.list('transactions').map((r) => [r.description, r.user_id]))
+    expect(owners).toEqual({ 'Mercado da casa': 'dona', 'Meu café': 'membro' })
+    // cada espaço só mostra o que é dele
+    expect((await data.listTransactions('2026-10-01', '2026-10-31')).map((t) => t.description)).toEqual(['Meu café'])
+    space = 'dona'
+    expect((await data.listTransactions('2026-10-01', '2026-10-31')).map((t) => t.description)).toEqual(['Mercado da casa'])
+    expect((await data.listUnpaid('2026-12-31', 'own')).length).toBe(0)
   })
 })

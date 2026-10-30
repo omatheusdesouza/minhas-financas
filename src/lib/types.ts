@@ -118,3 +118,27 @@ export type Bucket = 'avatars' | 'receipts'
 
 /** Valor de um lançamento para somas: sem valor informado conta como zero. */
 export const amt = (t: { amount: number | null }) => t.amount ?? 0
+
+export type FamilyRole = 'editor' | 'viewer'
+
+/** Um espaço de finanças: o do próprio usuário ou um compartilhado com ele. */
+export interface Space {
+  ownerId: string
+  name: string
+  avatarEmoji: string | null
+  /** null = espaço próprio */
+  role: FamilyRole | null
+}
+
+export interface FamilyMember {
+  memberId: string
+  name: string
+  avatarEmoji: string | null
+  role: FamilyRole
+}
+
+export interface FamilyInvite {
+  code: string
+  role: FamilyRole
+  expiresAt: string
+}

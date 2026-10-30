@@ -26,6 +26,8 @@ export interface Remote {
   fetchRow(t: TableName, id: string): Promise<any | null>
   /** lançamento de uma conta fixa num mês (para juntar duplicatas) */
   findRecurring(billId: string, month: string): Promise<any | null>
+  /** todas as linhas de um dono (modo família: espaço recém-compartilhado) */
+  rowsOf(t: TableName, ownerId: string): Promise<any[]>
 }
 
 export type SyncState = 'idle' | 'syncing' | 'offline' | 'error'
@@ -123,6 +125,35 @@ export class SyncEngine {
     } finally {
       await this.refreshPending()
     }
+  }
+
+  /** Modo família: baixa o espaço inteiro de quem acabou de compartilhar com este usuário. */
+  async importOwner(ownerId: string) {
+    const changed = new Set<TableName>()
+    for (const t of TABLES) {
+      const rows = await this.remote.rowsOf(t, ownerId)
+      if (rows.length) {
+        await this.tables.put(t, rows)
+        changed.add(t)
+      }
+    }
+    if (changed.size) this.onRemoteChange(changed)
+  }
+
+  /** Modo família: apaga do aparelho o espaço de quem deixou de compartilhar. */
+  async purgeOwner(ownerId: string) {
+    const changed = new Set<TableName>()
+    for (const t of TABLES) {
+      const ids = this.tables.all(t).filter((r) => r.user_id === ownerId).map((r) => keyOf(t, r))
+      if (ids.length) {
+        await this.tables.del(t, ids)
+        changed.add(t)
+      }
+    }
+    const ops = (await this.db.outbox.all()).filter((o) => o.row?.user_id === ownerId)
+    if (ops.length) await this.db.outbox.remove(ops.map((o) => o.seq))
+    await this.refreshPending()
+    if (changed.size) this.onRemoteChange(changed)
   }
 
   private async push() {

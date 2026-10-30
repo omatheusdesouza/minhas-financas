@@ -100,8 +100,8 @@ async function doSync(): Promise<number> {
   if (!remindersEnabled() || (await permissionState()) !== 'granted') return 0
 
   const [bills, goals, profile] = await Promise.all([
-    api.listUnpaid(addDays(today(), DEFAULT_HORIZON + 10)),
-    api.listGoals(),
+    api.listUnpaid(addDays(today(), DEFAULT_HORIZON + 10), 'own'),
+    api.listGoals('own'),
     api.getProfile(),
   ])
   const list = buildSchedule({ bills, goals, time: profile?.reminder_time ?? '09:00', now: new Date() })

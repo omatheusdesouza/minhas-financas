@@ -1,6 +1,6 @@
 import type { SyncStatus } from './sync'
 import type {
-  Bucket, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
+  Bucket, FamilyInvite, FamilyMember, FamilyRole, Space, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
   RecurringBill, SavingsGoal, Transaction,
 } from './types'
 
@@ -32,7 +32,8 @@ export interface Backend {
   deletePaymentMethod(id: string): Promise<void>
 
   listTransactions(from: string, to: string): Promise<Transaction[]>
-  listUnpaid(until: string): Promise<Transaction[]>
+  /** scope 'own' = só o espaço do próprio usuário (lembretes), mesmo vendo um espaço compartilhado */
+  listUnpaid(until: string, scope?: 'own'): Promise<Transaction[]>
   listPlanTransactions(): Promise<Transaction[]>
   saveTransaction(t: Draft<Transaction>): Promise<Transaction>
   updateTransactions(ids: string[], patch: Partial<Transaction>): Promise<void>
@@ -52,7 +53,7 @@ export interface Backend {
   getProfile(): Promise<Profile | null>
   saveProfile(p: Omit<Profile, 'user_id'>): Promise<Profile>
 
-  listGoals(): Promise<SavingsGoal[]>
+  listGoals(scope?: 'own'): Promise<SavingsGoal[]>
   saveGoal(g: Draft<SavingsGoal>): Promise<SavingsGoal>
   deleteGoal(id: string): Promise<void>
   listContributions(): Promise<GoalContribution[]>
@@ -73,6 +74,27 @@ export interface Backend {
   onSyncStatus?(cb: (s: SyncStatus) => void): () => void
   /** Dados chegaram da nuvem (outro aparelho): as telas devem recarregar. */
   onRemoteChange?(cb: () => void): () => void
+
+  /** Modo família (modo nuvem com a migration 0004) */
+  family?: FamilyApi
+}
+
+export interface FamilyApi {
+  /** a migration 0004 já foi aplicada? */
+  available(): boolean
+  /** espaços que o usuário pode ver: o próprio primeiro */
+  spaces(): Space[]
+  current(): string
+  setCurrent(ownerId: string): void
+  /** atualiza quem compartilha com o usuário (baixa/apaga espaços); precisa de internet */
+  refresh(): Promise<Space[]>
+  members(): Promise<{ members: FamilyMember[]; invites: FamilyInvite[] }>
+  invite(role: FamilyRole): Promise<FamilyInvite>
+  cancelInvite(code: string): Promise<void>
+  accept(code: string): Promise<Space>
+  setRole(memberId: string, role: FamilyRole): Promise<void>
+  remove(memberId: string): Promise<void>
+  leave(ownerId: string): Promise<void>
 }
 
 /** Primeiro acesso no aparelho sem internet: não dá para baixar os dados ainda. */

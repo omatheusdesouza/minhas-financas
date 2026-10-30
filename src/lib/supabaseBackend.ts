@@ -72,9 +72,10 @@ function toUser(u: { id: string; email?: string } | null | undefined): User | nu
 }
 
 /** Remove campos que o banco preenche sozinho antes de gravar. */
-function forUpload(t: TableName, o: any) {
+function forUpload(o: any) {
   const c = { ...o }
-  if (t !== 'profiles') delete c.user_id
+  // user_id vai junto (no modo família o dono do espaço pode ser outra pessoa); sem ele, o banco usa o usuário logado
+  if (!c.user_id) delete c.user_id
   delete c.created_at
   delete c.updated_at
   return c
@@ -160,7 +161,7 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
   }
   return {
     async upsert(t, rows) {
-      await run(sb.from(t).upsert(rows.map((r) => forUpload(t, r)), { onConflict: t === 'profiles' ? 'user_id' : 'id' }))
+      await run(sb.from(t).upsert(rows.map(forUpload), { onConflict: t === 'profiles' ? 'user_id' : 'id' }))
     },
     async remove(t, ids) {
       await run(sb.from(t).delete().in(t === 'profiles' ? 'user_id' : 'id', ids))
@@ -181,6 +182,14 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
     async fetchRow(t, id) {
       const r = await run(sb.from(t).select('*').eq(t === 'profiles' ? 'user_id' : 'id', id).maybeSingle())
       return r ? normalize(t, r) : null
+    },
+    async rowsOf(t, ownerId) {
+      const out: any[] = []
+      for (let from = 0; ; from += PAGE) {
+        const page = (await run(sb.from(t).select('*').eq('user_id', ownerId).order('updated_at').range(from, from + PAGE - 1))) as any[]
+        out.push(...page.map((r) => normalize(t, r)))
+        if (page.length < PAGE) return out
+      }
     },
     async findRecurring(billId, month) {
       const r = await run(sb.from('transactions').select('*').eq('recurring_bill_id', billId).eq('recurring_month', month).maybeSingle())

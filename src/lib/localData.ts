@@ -38,12 +38,22 @@ export async function stableId(key: string): Promise<string> {
   return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`
 }
 
-export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => string): DataApi {
+/**
+ * `space` = dono do espaço que está sendo visto (o próprio usuário ou, no modo família,
+ * quem compartilhou as finanças). Listas mostram só o espaço atual; o que é criado vai para ele.
+ */
+export function createLocalData(
+  tables: Tables, hooks: DataHooks, userId: () => string, space: () => string = userId,
+): DataApi {
   const stamp = <T,>(row: T): T => ({ ...row, client_updated_at: new Date().toISOString() })
+  // linhas antigas criadas antes do modo família podem não ter user_id: são do próprio usuário
+  const ownerOf = (r: { user_id?: string }) => r.user_id ?? userId()
+  const rows = <T,>(t: TableName, owner = space()): T[] => tables.all<T>(t).filter((r: any) => ownerOf(r) === owner)
 
   async function upsert(t: TableName, row: object & { id?: string }): Promise<any> {
     const id = row.id ?? uid()
-    const full = stamp({ ...(tables.get(t, id) ?? {}), ...row, id })
+    const prev = tables.get(t, id)
+    const full = stamp({ ...(prev ?? {}), ...row, id, user_id: prev ? ownerOf(prev) : space() })
     await tables.put(t, [full])
     await hooks.changed(t, [full])
     return full
@@ -54,17 +64,17 @@ export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => 
   }
   /** Altera linhas só localmente (efeito em cascata que a nuvem também faz). */
   async function localPatch<T extends { id: string }>(t: TableName, match: (r: T) => boolean, patch: Partial<T>) {
-    const rows = tables.all<T>(t).filter(match).map((r) => ({ ...r, ...patch }))
-    await tables.put(t, rows)
+    const changed = rows<T>(t).filter(match).map((r) => ({ ...r, ...patch }))
+    await tables.put(t, changed)
   }
 
   return {
     async listCategories() {
-      return tables.all<Category>('categories').sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+      return rows<Category>('categories').sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
     },
     saveCategory: (c) => upsert('categories', c),
     async deleteCategory(id) {
-      const gone = new Set([id, ...tables.all<Category>('categories').filter((c) => c.parent_id === id).map((c) => c.id)])
+      const gone = new Set([id, ...rows<Category>('categories').filter((c) => c.parent_id === id).map((c) => c.id)])
       await tables.del('categories', [...gone].filter((x) => x !== id))
       await remove('categories', id)
       const inGone = (r: { category_id: string | null }) => Boolean(r.category_id && gone.has(r.category_id))
@@ -74,7 +84,7 @@ export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => 
     },
 
     async listPaymentMethods() {
-      return tables.all<PaymentMethod>('payment_methods').sort((a, b) => a.name.localeCompare(b.name))
+      return rows<PaymentMethod>('payment_methods').sort((a, b) => a.name.localeCompare(b.name))
     },
     savePaymentMethod: (p) => upsert('payment_methods', p),
     async deletePaymentMethod(id) {
@@ -86,49 +96,49 @@ export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => 
     },
 
     async listTransactions(from, to) {
-      return tables.all<Transaction>('transactions').filter((t) => t.date >= from && t.date <= to).sort(byDateDesc)
+      return rows<Transaction>('transactions').filter((t) => t.date >= from && t.date <= to).sort(byDateDesc)
     },
-    async listUnpaid(until) {
-      return tables.all<Transaction>('transactions').filter((t) => !t.paid && t.date <= until).sort((a, b) => -byDateDesc(a, b))
+    async listUnpaid(until, scope) {
+      return rows<Transaction>('transactions', scope === 'own' ? userId() : space()).filter((t) => !t.paid && t.date <= until).sort((a, b) => -byDateDesc(a, b))
     },
     async listPlanTransactions() {
-      return tables.all<Transaction>('transactions')
+      return rows<Transaction>('transactions')
         .filter((t) => t.installment_plan_id)
         .sort((a, b) => (a.installment_number ?? 0) - (b.installment_number ?? 0))
     },
     saveTransaction: (t) => upsert('transactions', t),
     async updateTransactions(ids, patch) {
       const set = new Set(ids)
-      const rows = tables.all<Transaction>('transactions').filter((t) => set.has(t.id)).map((t) => stamp({ ...t, ...patch, id: t.id }))
-      await tables.put('transactions', rows)
-      await hooks.changed('transactions', rows)
+      const changed = rows<Transaction>('transactions').filter((t) => set.has(t.id)).map((t) => stamp({ ...t, ...patch, id: t.id }))
+      await tables.put('transactions', changed)
+      await hooks.changed('transactions', changed)
     },
     deleteTransaction: (id) => remove('transactions', id),
     async insertRecurringTransactions(ts) {
-      const existing = tables.all<Transaction>('transactions')
+      const existing = rows<Transaction>('transactions')
       const seen = new Set(existing.filter((r) => r.recurring_bill_id).map((r) => `${r.recurring_bill_id}|${r.recurring_month}`))
-      const rows: Transaction[] = []
+      const created: Transaction[] = []
       for (const t of ts) {
         const key = `${t.recurring_bill_id}|${t.recurring_month}`
         if (seen.has(key)) continue
         seen.add(key)
         // id fixo: dois aparelhos gerando a mesma conta do mês produzem o mesmo lançamento
-        rows.push(stamp({ ...t, id: await stableId(`recurring:${key}`) }) as Transaction)
+        created.push(stamp({ ...t, id: await stableId(`recurring:${key}`), user_id: space() }) as Transaction)
       }
-      await tables.put('transactions', rows)
-      await hooks.changed('transactions', rows)
+      await tables.put('transactions', created)
+      await hooks.changed('transactions', created)
     },
 
     async listPlans() {
-      return tables.all<InstallmentPlan>('installment_plans').sort((a, b) => (a.first_due < b.first_due ? 1 : -1))
+      return rows<InstallmentPlan>('installment_plans').sort((a, b) => (a.first_due < b.first_due ? 1 : -1))
     },
     async createPlan(p) {
       const { first_paid, ...meta } = p
       const plan = await upsert('installment_plans', meta)
-      const rows: Transaction[] = splitInstallments(p.total_amount, p.installments, p.first_due).map((part) => {
+      const parts: Transaction[] = splitInstallments(p.total_amount, p.installments, p.first_due).map((part) => {
         const paid = part.number === 1 && first_paid
         return stamp({
-          id: uid(), kind: 'expense', amount: part.amount, date: part.date,
+          id: uid(), user_id: plan.user_id, kind: 'expense', amount: part.amount, date: part.date,
           description: `${p.description} (${part.number}/${p.installments})`,
           category_id: p.category_id, payment_method_id: p.payment_method_id,
           paid, paid_at: paid ? part.date : null, notes: null,
@@ -136,8 +146,8 @@ export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => 
           recurring_bill_id: null, recurring_month: null, receipt_path: null,
         })
       })
-      await tables.put('transactions', rows)
-      await hooks.changed('transactions', rows)
+      await tables.put('transactions', parts)
+      await hooks.changed('transactions', parts)
       return plan.id
     },
     async updatePlan(id, patch) {
@@ -146,13 +156,13 @@ export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => 
     async deletePlan(id) {
       await remove('installment_plans', id)
       // na nuvem as parcelas são apagadas em cascata
-      const parts = tables.all<Transaction>('transactions').filter((t) => t.installment_plan_id === id).map((t) => t.id)
+      const parts = rows<Transaction>('transactions').filter((t) => t.installment_plan_id === id).map((t) => t.id)
       await tables.del('transactions', parts)
     },
 
     async listRecurring() {
       // contas criadas antes da 0002 não têm amount_type: equivalem a "fixo"
-      return tables.all<RecurringBill>('recurring_bills')
+      return rows<RecurringBill>('recurring_bills')
         .map((r) => ({ ...r, amount_type: r.amount_type ?? 'fixed', income_source: r.income_source ?? null }))
         .sort((a, b) => a.day_of_month - b.day_of_month)
     },
@@ -172,17 +182,17 @@ export function createLocalData(tables: Tables, hooks: DataHooks, userId: () => 
       return full
     },
 
-    async listGoals() {
-      return tables.all<SavingsGoal>('savings_goals')
+    async listGoals(scope) {
+      return rows<SavingsGoal>('savings_goals', scope === 'own' ? userId() : space())
     },
     saveGoal: (g) => upsert('savings_goals', g),
     async deleteGoal(id) {
       await remove('savings_goals', id)
-      const cs = tables.all<GoalContribution>('goal_contributions').filter((c) => c.goal_id === id).map((c) => c.id)
+      const cs = rows<GoalContribution>('goal_contributions').filter((c) => c.goal_id === id).map((c) => c.id)
       await tables.del('goal_contributions', cs)
     },
     async listContributions() {
-      return tables.all<GoalContribution>('goal_contributions').sort((a, b) => (a.date < b.date ? 1 : -1))
+      return rows<GoalContribution>('goal_contributions').sort((a, b) => (a.date < b.date ? 1 : -1))
     },
     saveContribution: (c) => upsert('goal_contributions', c),
     deleteContribution: (id) => remove('goal_contributions', id),
