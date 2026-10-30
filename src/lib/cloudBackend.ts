@@ -196,24 +196,34 @@ export function createCloudBackend(url: string, key: string): Backend {
     },
   })
 
+  /** Apaga a cópia local deste aparelho (privacidade): ao sair ou excluir a conta. */
+  async function clearDevice() {
+    if (session) {
+      const s = await session.catch(() => null)
+      unsubStatus?.()
+      await s?.db.destroy().catch(() => {})
+    }
+    if (sessionUser) saveShared(sessionUser, [])
+    session = null
+    sessionUser = null
+    space = null
+    shared = []
+  }
+
   return {
     mode: 'cloud',
     ...auth,
     ...pickData(data),
 
     async signOut() {
-      // apaga a cópia local deste aparelho (privacidade) antes de sair
-      if (session) {
-        const s = await session.catch(() => null)
-        unsubStatus?.()
-        await s?.db.destroy().catch(() => {})
-      }
-      if (sessionUser) saveShared(sessionUser, [])
-      session = null
-      sessionUser = null
-      space = null
-      shared = []
+      await clearDevice()
       await auth.signOut()
+    },
+
+    async deleteAccount() {
+      await auth.deleteAccount()
+      await clearDevice()
+      await auth.signOut().catch(() => {})
     },
 
     async prepare() {

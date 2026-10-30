@@ -6,6 +6,12 @@ import { Tables, localStoragePersistence } from './tables'
 
 const PREFIX = 'mf-demo:'
 const DEMO_USER: User = { id: 'demo', email: 'demonstracao@aparelho' }
+const demoUser = (): User => {
+  try {
+    const t = JSON.parse(localStorage.getItem(PREFIX + 'terms') ?? 'null') as { version: string; at: string } | null
+    return { ...DEMO_USER, termsVersion: t?.version ?? null, termsAcceptedAt: t?.at ?? null }
+  } catch { return DEMO_USER }
+}
 
 function uid() {
   return crypto.randomUUID()
@@ -27,13 +33,16 @@ export function createLocalBackend(): Backend {
   const setSigned = (v: boolean) => {
     if (v) localStorage.setItem(PREFIX + 'session', '1')
     else localStorage.removeItem(PREFIX + 'session')
-    listeners.forEach((cb) => cb(v ? DEMO_USER : null, v ? 'SIGNED_IN' : 'SIGNED_OUT'))
+    listeners.forEach((cb) => cb(v ? demoUser() : null, v ? 'SIGNED_IN' : 'SIGNED_OUT'))
   }
+
+  const saveTerms = (version: string) =>
+    localStorage.setItem(PREFIX + 'terms', JSON.stringify({ version, at: new Date().toISOString() }))
 
   return {
     mode: 'demo',
     async getUser() {
-      return signedIn() ? DEMO_USER : null
+      return signedIn() ? demoUser() : null
     },
     onAuthChange(cb) {
       listeners.add(cb)
@@ -42,9 +51,19 @@ export function createLocalBackend(): Backend {
     async signIn() {
       setSigned(true)
     },
-    async signUp() {
+    async signUp(_email, _password, termsVersion) {
+      saveTerms(termsVersion)
       setSigned(true)
       return { needsConfirmation: false }
+    },
+    async acceptTerms(version) {
+      saveTerms(version)
+      listeners.forEach((cb) => cb(demoUser(), 'USER_UPDATED'))
+    },
+    async deleteAccount() {
+      // apaga tudo o que o modo demonstração guardou neste aparelho
+      Object.keys(localStorage).filter((k) => k.startsWith(PREFIX)).forEach((k) => localStorage.removeItem(k))
+      setSigned(false)
     },
     async resetPassword() {},
     async verifyRecovery() {

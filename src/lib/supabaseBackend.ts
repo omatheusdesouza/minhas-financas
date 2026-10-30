@@ -67,8 +67,11 @@ export function classify(res: { error: any; status?: number }): RemoteError {
   return new RemoteError(translate(msg), 'permanent')
 }
 
-function toUser(u: { id: string; email?: string } | null | undefined): User | null {
-  return u ? { id: u.id, email: u.email ?? '' } : null
+function toUser(u: { id: string; email?: string; user_metadata?: Record<string, any> } | null | undefined): User | null {
+  return u ? {
+    id: u.id, email: u.email ?? '',
+    termsVersion: u.user_metadata?.terms_version ?? null, termsAcceptedAt: u.user_metadata?.terms_accepted_at ?? null,
+  } : null
 }
 
 /** Remove campos que o banco preenche sozinho antes de gravar. */
@@ -89,6 +92,7 @@ export function createSupabase(url: string, key: string): SupabaseClient {
 
 export type AuthAndFiles = Pick<Backend,
   | 'getUser' | 'onAuthChange' | 'signIn' | 'signUp' | 'resetPassword' | 'verifyRecovery' | 'updatePassword' | 'signOut'
+  | 'acceptTerms' | 'deleteAccount'
   | 'uploadFile' | 'fileUrl' | 'removeFile'>
 
 export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
@@ -109,9 +113,42 @@ export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
     async signIn(email, password) {
       check(await sb.auth.signInWithPassword({ email, password }))
     },
-    async signUp(email, password) {
-      const data = check(await sb.auth.signUp({ email, password }))
+    async signUp(email, password, termsVersion) {
+      const data = check(await sb.auth.signUp({
+        email, password,
+        options: { data: { terms_version: termsVersion, terms_accepted_at: new Date().toISOString() } },
+      }))
       return { needsConfirmation: !data.session }
+    },
+    async acceptTerms(version) {
+      check(await sb.auth.updateUser({ data: { terms_version: version, terms_accepted_at: new Date().toISOString() } }))
+    },
+    async deleteAccount() {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        throw new Error('Conecte-se à internet para excluir a conta.')
+      }
+      const { data } = await sb.auth.getSession()
+      const uid = data.session?.user.id
+      if (!uid) throw new Error('Faça login novamente.')
+      // 1) confere se o banco tem a função (migration 0005) antes de apagar qualquer coisa
+      const probe = await sb.rpc('delete_my_account', { confirm: false })
+      if (probe.error) {
+        if (probe.error.code === 'PGRST202' || /delete_my_account|schema cache/i.test(probe.error.message ?? '')) {
+          throw new Error('Para excluir contas, o banco de dados precisa da atualização 0005. Avise o responsável pelo app.')
+        }
+        throw new Error(probe.error.message)
+      }
+      // 2) arquivos (foto e comprovantes): a API de Storage é o único jeito de apagá-los
+      for (const bucket of ['avatars', 'receipts'] as const) {
+        for (;;) {
+          const files = check(await sb.storage.from(bucket).list(uid, { limit: 100 })) as { name: string }[]
+          if (!files.length) break
+          check(await sb.storage.from(bucket).remove(files.map((f) => `${uid}/${f.name}`)))
+          if (files.length < 100) break
+        }
+      }
+      // 3) a conta e, em cascata, todos os dados do banco
+      check(await sb.rpc('delete_my_account', { confirm: true }))
     },
     async resetPassword(email) {
       check(await sb.auth.resetPasswordForEmail(email))

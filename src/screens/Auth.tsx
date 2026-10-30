@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Field, Segmented } from '../components/Fields'
+import { AcceptBox, LegalLinks } from '../components/Legal'
 import { api } from '../lib/api'
+import { LEGAL_VERSION } from '../lib/legal'
 
 type Mode = 'login' | 'signup' | 'forgot' | 'code' | 'newpass'
 
@@ -17,6 +19,7 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
+  const [accepted, setAccepted] = useState(false)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -24,11 +27,12 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
     setInfo('')
     if ((mode === 'signup' || mode === 'newpass') && password !== password2) return setError('As senhas não conferem.')
     if ((mode === 'signup' || mode === 'newpass') && password.length < 6) return setError('A senha precisa ter pelo menos 6 caracteres.')
+    if (mode === 'signup' && !accepted) return setError('Para criar a conta, leia e aceite os Termos de Uso e a Política de Privacidade.')
     setBusy(true)
     try {
       if (mode === 'login') await api.signIn(email.trim(), password)
       else if (mode === 'signup') {
-        const r = await api.signUp(email.trim(), password)
+        const r = await api.signUp(email.trim(), password, LEGAL_VERSION)
         if (r.needsConfirmation) {
           setInfo('Conta criada! Abra o e-mail que enviamos e confirme o endereço. Depois é só entrar aqui.')
           setMode('login')
@@ -99,6 +103,8 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
           </Field>
         )}
 
+        {mode === 'signup' && <AcceptBox checked={accepted} onChange={setAccepted} />}
+
         {error && <p className="alert">{error}</p>}
         {info && <p className="note">{info}</p>}
 
@@ -111,6 +117,7 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
           <button type="button" className="link center" onClick={() => setMode('login')}>Voltar para o login</button>
         )}
       </form>
+      <p className="muted small center legal-foot"><LegalLinks prefix="Veja os " /></p>
     </div>
   )
 }

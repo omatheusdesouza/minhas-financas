@@ -2,10 +2,12 @@ import { App as CapApp } from '@capacitor/app'
 import { useEffect, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Icon } from './components/Icon'
+import { TermsGate } from './components/Legal'
 import { PaySheet } from './components/PaySheet'
 import { ShortcutsSheet, Sidebar } from './components/Sidebar'
 import { TxEditor } from './components/TxEditor'
 import { api } from './lib/api'
+import { LEGAL_VERSION } from './lib/legal'
 import { initNotifications, syncReminders } from './lib/notify'
 import { shortcutFor } from './lib/shortcuts'
 import type { User } from './lib/backend'
@@ -24,6 +26,8 @@ import { AppProvider, useApp } from './store'
 export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [recovering, setRecovering] = useState(false)
+  // sem internet não dá para registrar o aceite: libera nesta sessão e pede de novo na próxima
+  const [termsSkipped, setTermsSkipped] = useState(false)
 
   useEffect(() => {
     api.getUser().then(setUser).catch(() => setUser(null))
@@ -35,6 +39,8 @@ export function App() {
 
   if (user === undefined) return <div className="splash"><div className="spinner" /></div>
   if (!user || recovering) return <Auth recovering={recovering} onRecoveryStart={() => setRecovering(true)} onRecovered={() => setRecovering(false)} />
+
+  if (user.termsVersion !== LEGAL_VERSION && !termsSkipped) return <TermsGate user={user} onSkip={() => setTermsSkipped(true)} />
 
   return (
     <AppProvider user={user} onboarding={<Onboarding />}>

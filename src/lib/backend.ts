@@ -7,6 +7,9 @@ import type {
 export interface User {
   id: string
   email: string
+  /** versão dos Termos e da Política de Privacidade aceita (LGPD) e quando */
+  termsVersion?: string | null
+  termsAcceptedAt?: string | null
 }
 
 /** Tudo o que o app precisa do armazenamento. Há duas implementações: nuvem e demonstração. */
@@ -16,7 +19,12 @@ export interface Backend {
   getUser(): Promise<User | null>
   onAuthChange(cb: (u: User | null, event?: string) => void): () => void
   signIn(email: string, password: string): Promise<void>
-  signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>
+  /** termsVersion: versão dos Termos e da Política aceita ao criar a conta */
+  signUp(email: string, password: string, termsVersion: string): Promise<{ needsConfirmation: boolean }>
+  /** Registra o aceite de uma nova versão dos Termos e da Política. */
+  acceptTerms(version: string): Promise<void>
+  /** Apaga a conta, todos os dados e arquivos (LGPD, art. 18, VI). Precisa de internet no modo nuvem. */
+  deleteAccount(): Promise<void>
   resetPassword(email: string): Promise<void>
   /** Confirma o código de 6 dígitos enviado por e-mail e entra na conta. */
   verifyRecovery(email: string, code: string): Promise<void>

@@ -675,3 +675,18 @@ kbd {
 }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
+
+/* ---------- LGPD: textos legais, aceite e privacidade ---------- */
+.legal { display: flex; flex-direction: column; gap: 16px; font-size: 14px; line-height: 1.55; }
+.legal h3 { font-size: 15px; margin-bottom: 6px; }
+.legal p { margin: 0 0 8px; }
+.legal ul { margin: 0 0 8px; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.accept-box { display: flex; align-items: flex-start; gap: 10px; }
+.accept-box input { width: 20px; height: 20px; min-height: 0; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--accent); padding: 0; }
+.accept-box .link, .legal-foot .link { font-size: inherit; }
+.legal-foot { margin-top: -6px; }
+.menu-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+.menu-head p { margin: 2px 0 0; }
+.menu-note { margin: 0; padding: 12px 16px; }
+.btn.danger-fill { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.danger-fill:disabled { opacity: .45; }
