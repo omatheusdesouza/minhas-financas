@@ -1,3 +1,5 @@
+<p align="center"><img src="public/brand/logo-horizontal.svg" alt="Fynvault · Personal finance" width="420"></p>
+
 # Fynvault
 
 **Personal finance** · app de finanças pessoais para **Android e iPhone**, com conta própria (e-mail e senha) e dados guardados na nuvem: se você trocar ou perder o celular, não perde nada.
@@ -11,7 +13,7 @@
 | **Lançamentos** | Histórico completo com busca e filtros por período, tipo, categoria, forma de pagamento e situação (pago/pendente). |
 | **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
 | **Relatórios** | **Semana, quinzena, mês, ano ou qualquer período**: comparação com o período anterior, gastos por categoria e subcategoria, essencial × supérfluo, evolução diária/mensal, formas de pagamento, maiores gastos. Exporta **relatório completo (PDF)**, **planilha (Excel)** ou **resumo para WhatsApp**. |
-| **Ajustes** | Controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
+| **Ajustes** | Aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
 
 Categorias que já vêm prontas (todas editáveis): Casa – contas fixas, Compras para casa, Carro (combustível, conserto, seguro/IPVA…), Fast food e delivery, Shopping e roupas, Besteiras, Promissórias e parcelas, Saúde, Lazer, Educação, Investimentos, e categorias de ganhos (Salário, Renda extra, Vendas…).
 
@@ -69,6 +71,25 @@ A Apple só permite instalar apps no iPhone por meio dela. Há dois caminhos:
 - **Com o Apple Developer Program (US$ 99/ano):** permite distribuir pelo **TestFlight** (instala como um app normal, sem expirar a cada 7 dias) ou publicar na App Store. Serviços como o Codemagic compilam sem precisar de um Mac.
 
 ---
+
+## Identidade visual
+
+| | |
+|---|---|
+| Cores | azul-petróleo `#0B2A3C` · dourado `#D8B36A` · off-white `#F2EBDD` |
+| Logo | Cormorant Garamond (serifa) · Interface: Inter |
+| Arquivos | `public/brand/` (SVG), `assets/` (fontes dos ícones e splash), `store/` (imagens das lojas) |
+
+Para regerar a marca depois de mudar o desenho:
+
+```bash
+pip install fonttools brotli
+python3 scripts/build_brand.py           # SVGs em public/brand/
+node scripts/render_brand_png.cjs        # PNGs em assets/, store/ e public/brand/
+npx @capacitor/assets generate --android --ios --iconBackgroundColor '#F2EBDD' --splashBackgroundColor '#F2EBDD' --splashBackgroundColorDark '#071B27'
+```
+
+![Telas do Fynvault](telas/telas-fynvault.png)
 
 ## Para desenvolvedores
 
