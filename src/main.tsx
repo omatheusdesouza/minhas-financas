@@ -21,6 +21,9 @@ if (Capacitor.isNativePlatform()) {
     else if (canGoBack && location.hash !== '#/') history.back()
     else CapApp.minimizeApp()
   })
+} else {
+  // Versão web: guarda o app no aparelho (abre sem internet) e atualiza sozinho quando há versão nova
+  import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }))
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
