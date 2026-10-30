@@ -13,7 +13,8 @@
 | **Lançamentos** | Histórico completo com busca e filtros por período, tipo, categoria, forma de pagamento e situação (pago/pendente). |
 | **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
 | **Relatórios** | **Semana, quinzena, mês, ano ou qualquer período**: comparação com o período anterior, gastos por categoria e subcategoria, essencial × supérfluo, evolução diária/mensal, formas de pagamento, maiores gastos. Exporta **relatório completo (PDF)**, **planilha (Excel)** ou **resumo para WhatsApp**. |
-| **Ajustes** | Aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
+| **Primeiro acesso** | Onboarding: perfil (nome e foto/emoji), rendas fixas, gastos fixos (com modelos prontos; fixos ou variáveis) e meta de economia. |
+| **Ajustes** | Perfil, aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
 
 Categorias que já vêm prontas (todas editáveis): Casa – contas fixas, Compras para casa, Carro (combustível, conserto, seguro/IPVA…), Fast food e delivery, Shopping e roupas, Besteiras, Promissórias e parcelas, Saúde, Lazer, Educação, Investimentos, e categorias de ganhos (Salário, Renda extra, Vendas…).
 
@@ -38,7 +39,7 @@ Você vai precisar de duas contas gratuitas: **Supabase** (onde ficam seus dados
 1. Entre em **https://supabase.com**, clique em **Start your project** e crie a conta.
 2. Clique em **New project**, dê um nome (ex.: `fynvault`), crie uma senha forte para o banco e escolha a região **South America (São Paulo)**.
 3. Com o projeto criado, abra **SQL Editor** (menu da esquerda) › **New query**.
-4. Abra o arquivo `supabase/schema.sql` deste projeto, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
+4. Rode as migrations **em ordem**, uma de cada vez: abra `supabase/migrations/0001_inicial.sql`, copie **todo** o conteúdo, cole no editor e clique em **Run** (deve aparecer "Success"). Depois faça o mesmo com `0002_perfil_onboarding_metas.sql`, e assim por diante.
 5. **Recuperação de senha por código:** vá em **Authentication › Emails** (ou *Email Templates*) › **Reset Password** e troque o texto por:
    ```
    <h2>Recuperar senha</h2>
@@ -108,5 +109,9 @@ npx cap open android    # abre no Android Studio
 - **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 6. Gráficos com Recharts.
 - **Dados:** Supabase (PostgreSQL + login). Cada tabela tem *Row Level Security*: cada usuário só acessa os próprios dados.
 - **Modo demonstração:** sem as variáveis do Supabase, o app salva tudo no aparelho, útil para testar.
-- `supabase/schema.sql` pode ser executado de novo sem problema (não apaga dados).
+- **Banco de dados:** cada mudança é uma migration numerada em `supabase/migrations/`. Elas só acrescentam
+  (não apagam dados), podem ser executadas de novo sem problema e ficam registradas na tabela `app_migrations`.
+  Para saber o que já foi aplicado: `select * from app_migrations order by version;`
+- **Arquivos:** fotos de perfil (`avatars`) e comprovantes (`receipts`) ficam em buckets **privados** do Supabase Storage,
+  na pasta `<id do usuário>/`; só o dono acessa, por links temporários.
 - O APK é assinado com a chave `android/app/debug.keystore` (fixa, para permitir atualizações). Para publicar na Play Store, crie uma chave de release própria.
