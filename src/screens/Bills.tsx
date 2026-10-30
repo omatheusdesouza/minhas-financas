@@ -77,7 +77,7 @@ function Upcoming() {
 }
 
 function Plans() {
-  const { openEditor, idx, run } = useApp()
+  const { openEditor, idx, run, canEdit } = useApp()
   const [open, setOpen] = useState<string | null>(null)
   const [editing, setEditing] = useState<InstallmentPlan | null>(null)
   const [showDone, setShowDone] = useState(false)
@@ -103,9 +103,11 @@ function Plans() {
 
   return (
     <>
-      <button className="btn primary block" onClick={() => openEditor({ kind: 'expense' }, 'installments')}>
-        <Icon name="plus" /> Nova compra parcelada / promissória
-      </button>
+      {canEdit && (
+        <button className="btn primary block" onClick={() => openEditor({ kind: 'expense' }, 'installments')}>
+          <Icon name="plus" /> Nova compra parcelada / promissória
+        </button>
+      )}
       <div className="totals-bar">
         <span>Em aberto <b className="neg">{money(remainingAll)}</b></span>
         <span>{active.length} compra(s) ativa(s)</span>
@@ -140,7 +142,7 @@ function Plans() {
               <div className="plan-body">
                 {plan.notes && <p className="muted small">{plan.notes}</p>}
                 {parts.map((t) => <TxRow key={t.id} t={t} showDate />)}
-                <div className="btn-row">
+                {canEdit && <div className="btn-row">
                   <button className="btn ghost" onClick={() => setEditing(plan)}><Icon name="edit" size={16} /> Editar</button>
                   {remaining > 0 && (
                     <button className="btn ghost" onClick={() => {
@@ -152,7 +154,7 @@ function Plans() {
                     if (confirm(`Excluir "${plan.description}" e todas as ${parts.length} parcelas?`))
                       run(() => api.deletePlan(plan.id), 'Compra excluída')
                   }}><Icon name="trash" size={16} /> Excluir</button>
-                </div>
+                </div>}
               </div>
             )}
           </section>
@@ -202,7 +204,7 @@ function PlanEditor({ plan, parts, onClose }: { plan: InstallmentPlan; parts: Tr
 }
 
 function Recurring() {
-  const { idx } = useApp()
+  const { idx, canEdit } = useApp()
   const [editing, setEditing] = useState<Partial<RecurringBill> | null>(null)
   const { data } = useLoad(() => api.listRecurring(), [])
   if (!data) return <div className="skeleton tall" />
@@ -212,9 +214,11 @@ function Recurring() {
 
   return (
     <>
-      <button className="btn primary block" onClick={() => setEditing({ kind: 'expense', active: true })}>
-        <Icon name="plus" /> Nova conta fixa
-      </button>
+      {canEdit && (
+        <button className="btn primary block" onClick={() => setEditing({ kind: 'expense', active: true })}>
+          <Icon name="plus" /> Nova conta fixa
+        </button>
+      )}
       <div className="totals-bar">
         <span>Fixas por mês <b className="neg">{money(monthlyOut)}</b></span>
         {monthlyIn > 0 && <span>Ganhos fixos <b className="pos">{money(monthlyIn)}</b></span>}
@@ -224,7 +228,7 @@ function Recurring() {
         {data.map((b) => {
           const cat = idx.get(b.category_id)
           return (
-            <button key={b.id} className={`tx-main list-btn ${b.active ? '' : 'dim'}`} onClick={() => setEditing(b)}>
+            <button key={b.id} className={`tx-main list-btn ${b.active ? '' : 'dim'}`} disabled={!canEdit} onClick={() => setEditing(b)}>
               <span className="tx-icon" style={{ background: `${idx.root(b.category_id)?.color ?? '#94a3b8'}22` }}>{cat?.icon ?? '🔁'}</span>
               <span className="tx-text">
                 <span className="tx-desc">{b.description}</span>

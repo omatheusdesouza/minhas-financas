@@ -9,6 +9,7 @@ import { initNotifications, syncReminders } from './lib/notify'
 import type { User } from './lib/backend'
 import { Auth } from './screens/Auth'
 import { Bills } from './screens/Bills'
+import { FamilyScreen } from './screens/Family'
 import { GoalDetailScreen, GoalsScreen } from './screens/Goals'
 import { Home } from './screens/Home'
 import { Onboarding } from './screens/Onboarding'
@@ -45,7 +46,7 @@ export function App() {
 }
 
 function Shell() {
-  const { editor, openEditor, closeEditor, payTarget, closePay, version, bump } = useApp()
+  const { editor, openEditor, closeEditor, payTarget, closePay, version, bump, canEdit } = useApp()
   const navigate = useNavigate()
 
   // Lembretes: abrir a tela certa ao tocar na notificação
@@ -80,6 +81,7 @@ function Shell() {
           <Route path="/ajustes/categorias" element={<CategoriesScreen />} />
           <Route path="/ajustes/pagamentos" element={<PaymentMethodsScreen />} />
           <Route path="/ajustes/perfil" element={<ProfileScreen />} />
+          <Route path="/ajustes/familia" element={<FamilyScreen />} />
           <Route path="/metas" element={<GoalsScreen />} />
           <Route path="/metas/:id" element={<GoalDetailScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -89,7 +91,9 @@ function Shell() {
       <nav className="tabbar" aria-label="Navegação principal">
         <NavLink to="/" end><Icon name="home" /><span>Início</span></NavLink>
         <NavLink to="/lancamentos"><Icon name="list" /><span>Lançamentos</span></NavLink>
-        <button className="fab" onClick={() => openEditor()} aria-label="Novo lançamento"><Icon name="plus" size={28} /></button>
+        {canEdit
+          ? <button className="fab" onClick={() => openEditor()} aria-label="Novo lançamento"><Icon name="plus" size={28} /></button>
+          : <span className="fab-off" aria-hidden="true" />}
         <NavLink to="/contas"><Icon name="bills" /><span>Contas</span></NavLink>
         <NavLink to="/relatorios"><Icon name="chart" /><span>Relatórios</span></NavLink>
       </nav>

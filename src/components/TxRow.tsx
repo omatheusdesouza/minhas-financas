@@ -7,7 +7,7 @@ import { useApp } from '../store'
 import { Icon } from './Icon'
 
 export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
-  const { idx, paymentMethods, openEditor, openPay } = useApp()
+  const { idx, paymentMethods, openEditor, openPay, canEdit } = useApp()
   const cat = idx.get(t.category_id)
   const root = idx.root(t.category_id)
   const pm = paymentMethods.find((p) => p.id === t.payment_method_id)
@@ -42,7 +42,7 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
           )}
         </span>
       </button>
-      {!t.paid && (
+      {!t.paid && canEdit && (
         missing ? (
           <button className="btn ghost sm-btn" onClick={() => openPay(t)}>Informar</button>
         ) : (

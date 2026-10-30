@@ -32,6 +32,7 @@ function Status({ p, goal }: { p: GoalProgress; goal: SavingsGoal }) {
 
 export function GoalsScreen() {
   const { data } = useGoals()
+  const { canEdit } = useApp()
   const [editing, setEditing] = useState<Partial<SavingsGoal> | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const nav = useNavigate()
@@ -52,7 +53,7 @@ export function GoalsScreen() {
           <p className="muted small">{pct(totalSaved / (totalTarget || 1))} de {money(totalTarget)} em {active.length} meta(s)</p>
         </section>
       )}
-      <button className="btn primary block" onClick={() => setEditing({ icon: '🎯', archived: false })}><Icon name="plus" /> Nova meta</button>
+      {canEdit && <button className="btn primary block" onClick={() => setEditing({ icon: '🎯', archived: false })}><Icon name="plus" /> Nova meta</button>}
       {list.length === 0 && <p className="empty">Crie uma meta: reserva de emergência, viagem, carro novo… e acompanhe quanto falta.</p>}
       {list.map((g) => {
         const p = data.progress.get(g.id)!
@@ -85,7 +86,7 @@ export function GoalsScreen() {
 export function GoalDetailScreen() {
   const { id } = useParams()
   const { data } = useGoals()
-  const { run } = useApp()
+  const { run, canEdit } = useApp()
   const nav = useNavigate()
   const [contrib, setContrib] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -99,7 +100,7 @@ export function GoalDetailScreen() {
   return (
     <div className="screen">
       <header className="top"><Link to="/metas" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>{goal.icon} {goal.name}</h1>
-        <button className="icon-btn" aria-label="Editar meta" onClick={() => setEditing(true)}><Icon name="edit" /></button></header>
+        {canEdit ? <button className="icon-btn" aria-label="Editar meta" onClick={() => setEditing(true)}><Icon name="edit" /></button> : <span />}</header>
 
       <section className="card goal-detail">
         <div className="goal-ring-row">
@@ -122,7 +123,7 @@ export function GoalDetailScreen() {
           {goal.target_date && <li><span>Prazo</span><span>{fmt.day(goal.target_date)}</span></li>}
           {!p.done && p.neededPerMonth != null && <li><span>Para cumprir o prazo</span><span>{money(p.neededPerMonth)}/mês</span></li>}
         </ul>
-        {!goal.archived && <button className="btn primary block" onClick={() => setContrib(true)}><Icon name="plus" /> Registrar aporte</button>}
+        {canEdit && !goal.archived && <button className="btn primary block" onClick={() => setContrib(true)}><Icon name="plus" /> Registrar aporte</button>}
       </section>
 
       <section className="card">
@@ -157,8 +158,8 @@ export function GoalDetailScreen() {
             {list.map((c) => (
               <li key={c.id}>
                 <span>{fmt.day(c.date)}{c.note ? <span className="muted small"> · {c.note}</span> : null}</span>
-                <span>{money(c.amount)} <button className="link danger-text small" onClick={() =>
-                  confirm('Excluir este aporte?') && run(() => api.deleteContribution(c.id), 'Aporte excluído')}>excluir</button></span>
+                <span>{money(c.amount)} {canEdit && <button className="link danger-text small" onClick={() =>
+                  confirm('Excluir este aporte?') && run(() => api.deleteContribution(c.id), 'Aporte excluído')}>excluir</button>}</span>
               </li>
             ))}
           </ul>

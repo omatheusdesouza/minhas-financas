@@ -68,6 +68,7 @@ export function Settings() {
 
       <nav className="card flush menu">
         <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
+        <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
         <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
         <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento <Icon name="right" className="end" /></Link>
         <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
@@ -112,7 +113,7 @@ function PasswordSheet({ onClose }: { onClose: () => void }) {
 }
 
 export function CategoriesScreen() {
-  const { idx, run, reloadMeta } = useApp()
+  const { idx, run, reloadMeta, canEdit, space } = useApp()
   const [kind, setKind] = useState<Kind>('expense')
   const [editing, setEditing] = useState<Partial<Category> | null>(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -142,7 +143,7 @@ export function CategoriesScreen() {
 
   const row = (c: Category, child = false) => (
     <div key={c.id} className={`cat-row ${child ? 'child' : ''} ${c.archived ? 'dim' : ''}`}>
-      <button className="cat-main" onClick={() => setEditing(c)}>
+      <button className="cat-main" disabled={!canEdit} onClick={() => setEditing(c)}>
         <span className="tx-icon" style={{ background: `${(idx.root(c.id)?.color ?? c.color)}22` }}>{c.icon}</span>
         <span className="tx-text">
           <span className="tx-desc">{c.name}</span>
@@ -162,7 +163,8 @@ export function CategoriesScreen() {
     <div className="screen">
       <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Categorias</h1><span /></header>
       <Segmented value={kind} onChange={setKind} options={[{ value: 'expense', label: 'Gastos' }, { value: 'income', label: 'Ganhos' }]} />
-      <button className="btn primary block" onClick={() => setEditing({ kind, parent_id: null })}><Icon name="plus" /> Nova categoria</button>
+      {space.role && <p className="note small">Categorias das finanças de {space.name}.</p>}
+      {canEdit && <button className="btn primary block" onClick={() => setEditing({ kind, parent_id: null })}><Icon name="plus" /> Nova categoria</button>}
       <p className="muted small">Toque para editar nome, ícone, cor, tipo e limite mensal. Use as setas para reordenar.</p>
       {legacy.length > 0 && (
         <div className="note palette-note">
@@ -174,9 +176,9 @@ export function CategoriesScreen() {
         <section key={r.id} className="card flush">
           {row(r)}
           {idx.children(r.id, true).filter((c) => showArchived || !c.archived).map((c) => row(c, true))}
-          <button className="add-sub" onClick={() => setEditing({ kind, parent_id: r.id, color: r.color, nature: r.nature })}>
+          {canEdit && <button className="add-sub" onClick={() => setEditing({ kind, parent_id: r.id, color: r.color, nature: r.nature })}>
             <Icon name="plus" size={16} /> Subcategoria em {r.name}
-          </button>
+          </button>}
         </section>
       ))}
       <Toggle checked={showArchived} onChange={setShowArchived} label="Mostrar arquivadas" />
@@ -277,7 +279,7 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
 }
 
 export function PaymentMethodsScreen() {
-  const { paymentMethods, run, reloadMeta } = useApp()
+  const { paymentMethods, run, reloadMeta, canEdit } = useApp()
   const [editing, setEditing] = useState<Partial<PaymentMethod> | null>(null)
   const [name, setName] = useState('')
 
@@ -294,11 +296,11 @@ export function PaymentMethodsScreen() {
   return (
     <div className="screen">
       <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Formas de pagamento</h1><span /></header>
-      <button className="btn primary block" onClick={() => { setEditing({}); setName('') }}><Icon name="plus" /> Nova forma de pagamento</button>
+      {canEdit && <button className="btn primary block" onClick={() => { setEditing({}); setName('') }}><Icon name="plus" /> Nova forma de pagamento</button>}
       <p className="muted small">Ex.: Cartão Nubank, Cartão Itaú, Pix, Dinheiro, Promissória da loja X…</p>
       <div className="card flush">
         {paymentMethods.map((m) => (
-          <button key={m.id} className={`tx-main list-btn ${m.archived ? 'dim' : ''}`} onClick={() => { setEditing(m); setName(m.name) }}>
+          <button key={m.id} className={`tx-main list-btn ${m.archived ? 'dim' : ''}`} disabled={!canEdit} onClick={() => { setEditing(m); setName(m.name) }}>
             <span className="tx-icon"><Icon name="card" /></span>
             <span className="tx-text"><span className="tx-desc">{m.name}</span>{m.archived && <span className="tx-meta">arquivada</span>}</span>
             <Icon name="edit" size={16} />

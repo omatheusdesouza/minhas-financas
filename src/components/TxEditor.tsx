@@ -19,7 +19,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
   initialMode?: Mode
   onClose: () => void
 }) {
-  const { run, idx } = useApp()
+  const { run, idx, canEdit } = useApp()
   const editing = Boolean(initial?.id)
   const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense')
   const [amount, setAmount] = useState(moneyInput(initial?.amount))
@@ -117,9 +117,9 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
 
   return (
     <Sheet
-      title={editing ? 'Editar lançamento' : 'Novo lançamento'}
+      title={!canEdit ? 'Detalhes do lançamento' : editing ? 'Editar lançamento' : 'Novo lançamento'}
       onClose={onClose}
-      footer={
+      footer={!canEdit ? undefined :
         <>
           {editing && <button className="btn danger ghost" onClick={remove}>Excluir</button>}
           <button className="btn primary grow" disabled={!valid || saving} onClick={save}>
@@ -128,6 +128,8 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         </>
       }
     >
+      {!canEdit && <p className="note small">Você só pode visualizar estas finanças.</p>}
+      <fieldset className="plain-fieldset" disabled={!canEdit}>
       <Segmented
         value={kind} onChange={changeKind}
         options={[
@@ -249,6 +251,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
           {receipt !== (initial?.receipt_path ?? null) && <span className="field-hint">Toque em Salvar para guardar a mudança.</span>}
         </Field>
       )}
+      </fieldset>
     </Sheet>
   )
 }

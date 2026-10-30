@@ -3,7 +3,7 @@ import { api } from './lib/api'
 import { FirstSyncOfflineError, SchemaOutdatedError, type User } from './lib/backend'
 import { CategoryIndex, generateRecurring, seedIfEmpty } from './lib/services'
 import type { SyncStatus } from './lib/sync'
-import type { Category, PaymentMethod, Profile, Transaction } from './lib/types'
+import type { Category, PaymentMethod, Profile, Space, Transaction } from './lib/types'
 
 interface Toast {
   id: number
@@ -20,6 +20,13 @@ interface TxEditor {
 
 interface AppState {
   user: User
+  /** modo família: espaços disponíveis (o próprio primeiro) e o que está aberto */
+  spaces: Space[]
+  space: Space
+  setSpace: (ownerId: string) => void
+  reloadSpaces: () => Promise<void>
+  /** pode alterar dados no espaço aberto? (falso para quem só visualiza) */
+  canEdit: boolean
   /** estado da sincronização (null no modo demonstração) */
   sync: SyncStatus | null
   profile: Profile | null
@@ -98,6 +105,9 @@ export function AppProvider({ user, children, onboarding }: {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [payTarget, setPayTarget] = useState<Transaction | null>(null)
   const [sync, setSync] = useState<SyncStatus | null>(null)
+  const ownSpace: Space = { ownerId: user.id, name: 'Minhas finanças', avatarEmoji: null, role: null }
+  const [spaces, setSpaces] = useState<Space[]>([ownSpace])
+  const [spaceId, setSpaceId] = useState(user.id)
   const [firstSyncOffline, setFirstSyncOffline] = useState(false)
   const [schemaOutdated, setSchemaOutdated] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -150,6 +160,7 @@ export function AppProvider({ user, children, onboarding }: {
         setSchemaOutdated(null)
         await prepare(user.id)
         await Promise.all([reloadMeta(), reloadProfile()])
+        if (api.family?.available()) setSpaces(api.family.spaces())
         setReady(true)
       } catch (e: any) {
         if (e instanceof FirstSyncOfflineError) return setFirstSyncOffline(true)
@@ -164,6 +175,11 @@ export function AppProvider({ user, children, onboarding }: {
   useEffect(() => {
     const offStatus = api.onSyncStatus?.(setSync)
     const offChange = api.onRemoteChange?.(() => {
+      if (api.family?.available()) {
+        const list = api.family.spaces()
+        setSpaces(list)
+        setSpaceId(api.family.current())
+      }
       reloadMeta().catch(() => {})
       reloadProfile().catch(() => {})
       bump()
@@ -179,8 +195,24 @@ export function AppProvider({ user, children, onboarding }: {
 
   const idx = useMemo(() => new CategoryIndex(categories), [categories])
 
+  const space = spaces.find((x) => x.ownerId === spaceId) ?? spaces[0]
   const value: AppState = {
-    user, sync, profile, avatarUrl, reloadProfile, categories, idx, paymentMethods, version, bump, reloadMeta, toast, run,
+    user, sync, profile, spaces, space,
+    canEdit: space.role !== 'viewer',
+    setSpace(ownerId) {
+      api.family?.setCurrent(ownerId)
+      setSpaceId(api.family?.current() ?? user.id)
+      reloadMeta().catch(() => {})
+      bump()
+    },
+    async reloadSpaces() {
+      if (!api.family?.available()) return
+      const list = await api.family.refresh()
+      setSpaces(list)
+      setSpaceId(api.family.current())
+      await reloadMeta()
+      bump()
+    }, avatarUrl, reloadProfile, categories, idx, paymentMethods, version, bump, reloadMeta, toast, run,
     editor,
     openEditor: (tx, mode) => setEditor({ tx, mode }),
     closeEditor: () => setEditor(null),

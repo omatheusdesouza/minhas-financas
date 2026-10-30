@@ -6,6 +6,7 @@ import { ContributionSheet } from '../components/ContributionSheet'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
 import { PermissionHelp, useReminderPermission } from '../components/Reminders'
+import { SpaceSwitcher } from '../components/SpaceSwitcher'
 import { SyncBanner } from '../components/SyncBadge'
 import { TxRow } from '../components/TxRow'
 import { api } from '../lib/api'
@@ -18,7 +19,7 @@ import { amt, type SavingsGoal, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 export function Home() {
-  const { idx, profile } = useApp()
+  const { idx, profile, space, canEdit } = useApp()
   const nav = useNavigate()
   const [p, setP] = useState(initialPeriod('mes'))
   const [showHealth, setShowHealth] = useState(false)
@@ -89,11 +90,17 @@ export function Home() {
         <div className="grow">
           <p className="muted small">{hello},</p>
           <h1 className="hello">{profile?.display_name}</h1>
+          <SpaceSwitcher />
         </div>
         <Link to="/ajustes" className="icon-btn" aria-label="Ajustes"><Icon name="gear" /></Link>
       </header>
 
       <SyncBanner />
+      {space.role && (
+        <p className="note small shared-note">
+          Você está vendo as finanças de <b>{space.name}</b>{space.role === 'viewer' ? ' (só visualizar).' : '. O que você lançar aqui entra nessas finanças.'}
+        </p>
+      )}
       <PeriodPicker value={p} onChange={setP} presets={false} />
 
       {!view ? <div className="skeleton tall" /> : (
@@ -144,12 +151,12 @@ export function Home() {
                     : view.goal.monthly_contribution ? `Aporte de ${money(view.goal.monthly_contribution)}/mês` : 'Ver detalhes'}
                   {view.otherGoals > 0 && ` · +${view.otherGoals} meta(s)`}
                 </span>
-                {view.saved < view.goal.target_amount && (
+                {canEdit && view.saved < view.goal.target_amount && (
                   <button className="btn ghost sm-btn gold-btn" onClick={(e) => { e.stopPropagation(); setContribGoal(view.goal) }}>Aportar</button>
                 )}
               </div>
             </div>
-          ) : (
+          ) : canEdit && (
             <Link to="/metas" className="card goal-empty"><span className="goal-icon">🎯</span>
               <span className="grow"><b>Crie uma meta de economia</b><span className="muted small"> · reserva, viagem, carro…</span></span>
               <Icon name="right" /></Link>
@@ -165,7 +172,7 @@ export function Home() {
             </section>
           )}
 
-          {!hideReminderCard && (reminders.state === 'prompt' || reminders.state === 'denied') && (
+          {!space.role && !hideReminderCard && (reminders.state === 'prompt' || reminders.state === 'denied') && (
             <section className="card reminder-card">
               <div className="card-title"><h3>🔔 Ative os lembretes</h3>
                 <button className="link muted" onClick={() => {
