@@ -15,6 +15,7 @@ import { Onboarding } from './screens/Onboarding'
 import { Reports } from './screens/Reports'
 import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from './screens/Settings'
 import { Transactions } from './screens/Transactions'
+import { LockProvider } from './lockContext'
 import { AppProvider, useApp } from './store'
 
 export function App() {
@@ -34,9 +35,11 @@ export function App() {
 
   return (
     <AppProvider user={user} onboarding={<Onboarding />}>
-      <HashRouter>
-        <Shell />
-      </HashRouter>
+      <LockProvider>
+        <HashRouter>
+          <Shell />
+        </HashRouter>
+      </LockProvider>
     </AppProvider>
   )
 }

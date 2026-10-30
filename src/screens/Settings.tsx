@@ -5,6 +5,8 @@ import { MyAvatar } from '../components/Avatar'
 import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
 import { ProfileForm, draftFrom, nameError, saveProfileDraft } from '../components/ProfileForm'
 import { ReminderSettings } from '../components/Reminders'
+import { SecuritySettings } from '../components/SecuritySettings'
+import { useLock } from '../lockContext'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
@@ -16,6 +18,7 @@ import { useApp } from '../store'
 
 export function Settings() {
   const { user, run, profile } = useApp()
+  const lock = useLock()
   const [pwOpen, setPwOpen] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme())
 
@@ -58,13 +61,19 @@ export function Settings() {
 
       <ReminderSettings />
 
+      <SecuritySettings />
+
       <nav className="card flush menu">
         <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
         <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
         <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento <Icon name="right" className="end" /></Link>
         <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
         {api.mode === 'cloud' && <button onClick={() => setPwOpen(true)}><Icon name="user" /> Trocar senha <Icon name="right" className="end" /></button>}
-        <button className="danger-text" onClick={() => confirm('Sair da sua conta?') && api.signOut()}><Icon name="logout" /> Sair</button>
+        <button className="danger-text" onClick={async () => {
+          if (!confirm('Sair da sua conta? O bloqueio por PIN deste celular também é removido.')) return
+          await lock.clear()
+          await api.signOut()
+        }}><Icon name="logout" /> Sair</button>
       </nav>
 
       <p className="muted small center">Fynvault · Personal finance · versão 1.1</p>

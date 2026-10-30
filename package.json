@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^8.0.2",
+    "@aparajita/capacitor-secure-storage": "^6.0.1",
     "@capacitor/android": "^6.2.0",
     "@capacitor/app": "^6.0.2",
     "@capacitor/core": "^6.2.0",

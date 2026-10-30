@@ -16,7 +16,8 @@
 | **Metas** | Metas de economia com progresso, previsão de quando você chega lá, quanto guardar por mês para cumprir o prazo, gráfico da evolução e histórico de aportes. |
 | **Primeiro acesso** | Onboarding: perfil (nome e foto/emoji), rendas fixas, gastos fixos (com modelos prontos; fixos ou variáveis) e meta de economia. |
 | **Lembretes** | Notificações no celular, mesmo com o app fechado: informar valor das contas variáveis (diário, de 10 a 3 dias antes), alerta crítico 2 dias antes, aviso no dia, alerta diário de conta vencida até pagar e lembrete mensal do aporte na meta. Horário configurável. |
-| **Ajustes** | Perfil, lembretes, aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
+| **Segurança** | Bloqueio do app por **PIN** (4 ou 6 números) e **digital / Face ID**, pedido ao abrir e ao voltar (imediatamente, após 1 ou 5 minutos). O PIN fica só no celular, no armazenamento seguro do sistema, como hash. |
+| **Ajustes** | Perfil, lembretes, segurança, aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
 
 Categorias que já vêm prontas (todas editáveis): Casa – contas fixas, Compras para casa, Carro (combustível, conserto, seguro/IPVA…), Fast food e delivery, Shopping e roupas, Besteiras, Promissórias e parcelas, Saúde, Lazer, Educação, Investimentos, e categorias de ganhos (Salário, Renda extra, Vendas…).
 
@@ -115,6 +116,9 @@ npx cap open android    # abre no Android Studio
 - **Lembretes:** `src/lib/reminders.ts` calcula a agenda (testável, sem depender do celular) e `src/lib/notify.ts`
   agenda as notificações locais. A agenda inteira é recalculada a cada mudança e ao voltar para o app (no máximo 60
   lembretes nos próximos 30 dias, por causa do limite de 64 do iPhone). Canais Android: `fv-lembretes` e `fv-alertas`.
+- **Bloqueio:** `src/lib/lock.ts` (regras, testadas) e `src/lib/deviceLock.ts` (Keychain/Keystore via
+  `@aparajita/capacitor-secure-storage` e biometria via `@aparajita/capacitor-biometric-auth`). A configuração não vai
+  para a nuvem; sair da conta ou "Esqueci o PIN" remove o bloqueio do aparelho.
 - **Banco de dados:** cada mudança é uma migration numerada em `supabase/migrations/`. Elas só acrescentam
   (não apagam dados), podem ser executadas de novo sem problema e ficam registradas na tabela `app_migrations`.
   Para saber o que já foi aplicado: `select * from app_migrations order by version;`
