@@ -2,7 +2,7 @@
 
 # Fynvault
 
-**Personal finance** · app de finanças pessoais para **Android e iPhone**, com conta própria (e-mail e senha) e dados guardados na nuvem: se você trocar ou perder o celular, não perde nada.
+**Personal finance** · app de finanças pessoais para **Android, iPhone e computador**, com conta própria (e-mail e senha) e dados guardados na nuvem: se você trocar ou perder o celular, não perde nada.
 
 ## O que o app faz
 
@@ -69,7 +69,36 @@ Você vai precisar de duas contas gratuitas: **Supabase** (onde ficam seus dados
 
 Sempre que o código mudar, o GitHub gera uma nova versão sozinho. É só baixar e instalar por cima (seus dados ficam na nuvem).
 
-### 3. iPhone (iOS)
+### 3. Versão web: computador e iPhone
+
+O mesmo app roda no navegador, com a mesma conta e os mesmos dados do celular:
+**https://omatheusdesouza.github.io/minhas-financas/**
+
+Configuração (uma vez só):
+
+1. No GitHub, abra o repositório › **Settings › Pages** e em **Build and deployment › Source** escolha **GitHub Actions**.
+2. Na aba **Actions**, abra **Publicar versão web** › **Run workflow** (depois disso o site atualiza sozinho a cada mudança).
+3. No Supabase, em **Authentication › URL Configuration**, coloque o endereço acima em **Site URL** (ou em
+   **Redirect URLs**), para os e-mails de confirmação apontarem para o site.
+
+Como usar:
+
+- **Computador:** abra o link no Chrome, Edge ou Safari. No Chrome/Edge, o ícone de instalar na barra de endereço
+  coloca o Fynvault como um app no computador.
+- **iPhone:** abra o link no **Safari** › botão **Compartilhar** › **Adicionar à Tela de Início**. O Fynvault ganha
+  ícone e abre em tela cheia, como um app. (O iPhone não instala arquivos APK; esse é o jeito de ter o app nele sem
+  a App Store.)
+- **Android:** use o `Fynvault.apk` (seção 2) ou também pode adicionar o site à tela inicial.
+
+Na versão web o app também abre sem internet e se atualiza sozinho. O que muda em relação ao APK:
+
+| Recurso | Na web |
+|---|---|
+| Lembretes com o app fechado | Não (exigem o app instalado; os avisos de contas aparecem dentro do app) |
+| Digital / Face ID | Não; o bloqueio por **PIN** funciona |
+| Exportar PDF / Excel | Baixa o arquivo pelo navegador |
+
+### 4. iPhone como app nativo (opcional)
 
 A Apple só permite instalar apps no iPhone por meio dela. Há dois caminhos:
 
@@ -113,6 +142,9 @@ npx cap open android    # abre no Android Studio
 ```
 
 - **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 6. Gráficos com Recharts.
+- **Versão web (PWA):** `vite-plugin-pwa` gera o manifesto e o service worker (app guardado no aparelho, atualização
+  automática). O service worker só é registrado fora do app nativo (`src/main.tsx`). O workflow `web.yml` publica
+  `dist/` no GitHub Pages; o `android.yml` continua gerando o APK.
 - **Dados:** Supabase (PostgreSQL + login). Cada tabela tem *Row Level Security*: cada usuário só acessa os próprios dados.
 - **Modo demonstração:** sem as variáveis do Supabase, o app salva tudo no aparelho, útil para testar.
 - **Offline e sincronização:** as telas leem e gravam numa cópia local (`src/lib/tables.ts`, IndexedDB) com as regras

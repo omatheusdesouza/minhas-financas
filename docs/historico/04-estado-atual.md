@@ -24,6 +24,7 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | Modo família com convite e permissões | Pronto |
 | RLS em todas as tabelas, buckets privados, sem segredos no repositório | Pronto |
 | README atualizado, 65 testes automáticos, CI gerando APK | Pronto |
+| Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (falta ativar Pages › Source: GitHub Actions) |
 
 ## Parcial / não verificado
 
