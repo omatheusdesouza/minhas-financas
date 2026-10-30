@@ -1,0 +1,87 @@
+# 💰 Minhas Finanças
+
+App de finanças pessoais para **Android e iPhone**, com conta própria (e-mail e senha) e dados guardados na nuvem: se você trocar ou perder o celular, não perde nada.
+
+## O que o app faz
+
+| Tela | Para que serve |
+|---|---|
+| **Início** | Saldo do mês, ganhos × gastos, **índice de saúde financeira (0 a 100)** com dicas, contas atrasadas e próximas, gráfico de para onde foi o dinheiro e limites por categoria. |
+| **+ (botão central)** | Lança um gasto ou ganho em segundos: à vista, **parcelado / promissória** (gera todas as parcelas) ou **todo mês** (conta fixa). |
+| **Lançamentos** | Histórico completo com busca e filtros por período, tipo, categoria, forma de pagamento e situação (pago/pendente). |
+| **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
+| **Relatórios** | **Semana, quinzena, mês, ano ou qualquer período**: comparação com o período anterior, gastos por categoria e subcategoria, essencial × supérfluo, evolução diária/mensal, formas de pagamento, maiores gastos. Exporta **relatório completo (PDF)**, **planilha (Excel)** ou **resumo para WhatsApp**. |
+| **Ajustes** | Controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
+
+Categorias que já vêm prontas (todas editáveis): Casa – contas fixas, Compras para casa, Carro (combustível, conserto, seguro/IPVA…), Fast food e delivery, Shopping e roupas, Besteiras, Promissórias e parcelas, Saúde, Lazer, Educação, Investimentos, e categorias de ganhos (Salário, Renda extra, Vendas…).
+
+### Como funciona o índice de saúde financeira
+
+| Fator | Peso | Ideal |
+|---|---|---|
+| Sobra do mês | 35 | guardar 20% ou mais do que ganha |
+| Gastos supérfluos | 20 | até 10% dos gastos |
+| Parcelas comprometidas | 20 | até 10% da renda nos próximos 3 meses |
+| Contas em dia | 15 | nenhuma atrasada |
+| Limites de gasto | 10 | nenhum limite estourado |
+
+---
+
+## Como colocar no ar (passo a passo)
+
+Você vai precisar de duas contas gratuitas: **Supabase** (onde ficam seus dados) e **GitHub** (que monta o app Android para você).
+
+### 1. Criar o banco de dados (Supabase) — uns 10 minutos
+
+1. Entre em **https://supabase.com**, clique em **Start your project** e crie a conta.
+2. Clique em **New project**, dê um nome (ex.: `minhas-financas`), crie uma senha forte para o banco e escolha a região **South America (São Paulo)**.
+3. Com o projeto criado, abra **SQL Editor** (menu da esquerda) › **New query**.
+4. Abra o arquivo `supabase/schema.sql` deste projeto, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
+5. **Recuperação de senha por código:** vá em **Authentication › Emails** (ou *Email Templates*) › **Reset Password** e troque o texto por:
+   ```
+   <h2>Recuperar senha</h2>
+   <p>Seu código para criar uma nova senha no Minhas Finanças é: <b>{{ .Token }}</b></p>
+   ```
+6. *(Opcional, deixa mais simples)* Em **Authentication › Sign In / Providers › Email**, desligue **Confirm email**. Assim a conta já funciona na hora, sem precisar abrir o link de confirmação.
+7. Vá em **Project Settings › API** (ou **Data API**) e anote:
+   - **Project URL** (algo como `https://abcdxyz.supabase.co`)
+   - **anon public key** (um texto longo começando com `eyJ...`)
+
+### 2. Gerar o app Android (GitHub) — uns 10 minutos
+
+1. Crie uma conta em **https://github.com** e um repositório **privado** novo (ex.: `minhas-financas`).
+2. Envie todos os arquivos deste projeto para o repositório.
+3. No repositório, vá em **Settings › Secrets and variables › Actions › New repository secret** e crie dois:
+   - `VITE_SUPABASE_URL` = a Project URL do passo 1
+   - `VITE_SUPABASE_ANON_KEY` = a anon public key do passo 1
+4. Vá na aba **Actions**, escolha **Gerar APK Android** › **Run workflow**. Em uns 5 minutos fica pronto.
+5. No celular Android, abra o repositório no GitHub › **Releases** › baixe **MinhasFinancas.apk** e toque nele para instalar.
+   O Android vai pedir para **permitir instalar apps desta fonte**. Permita (é o seu próprio app).
+6. Abra o app, toque em **Criar conta**, e pronto!
+
+Sempre que o código mudar, o GitHub gera uma nova versão sozinho. É só baixar e instalar por cima (seus dados ficam na nuvem).
+
+### 3. iPhone (iOS)
+
+A Apple só permite instalar apps no iPhone por meio dela. Há dois caminhos:
+
+- **Com um Mac (grátis):** instale o **Xcode**, rode `npm install`, `npm run build`, `npx cap sync ios` e `npx cap open ios`. Conecte o iPhone, escolha seu Apple ID em *Signing & Capabilities* e clique em ▶︎. Com conta Apple gratuita o app precisa ser reinstalado a cada 7 dias.
+- **Com o Apple Developer Program (US$ 99/ano):** permite distribuir pelo **TestFlight** (instala como um app normal, sem expirar a cada 7 dias) ou publicar na App Store. Serviços como o Codemagic compilam sem precisar de um Mac.
+
+---
+
+## Para desenvolvedores
+
+```bash
+npm install
+cp .env.example .env    # preencha com URL e chave do Supabase
+npm run dev             # roda no navegador (sem .env abre em modo demonstração)
+npm run build && npx cap sync   # atualiza os projetos android/ e ios/
+npx cap open android    # abre no Android Studio
+```
+
+- **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 6. Gráficos com Recharts.
+- **Dados:** Supabase (PostgreSQL + login). Cada tabela tem *Row Level Security*: cada usuário só acessa os próprios dados.
+- **Modo demonstração:** sem as variáveis do Supabase, o app salva tudo no aparelho, útil para testar.
+- `supabase/schema.sql` pode ser executado de novo sem problema (não apaga dados).
+- O APK é assinado com a chave `android/app/debug.keystore` (fixa, para permitir atualizações). Para publicar na Play Store, crie uma chave de release própria.

@@ -1,0 +1,197 @@
+import { useState } from 'react'
+import { api } from '../lib/api'
+import { startOfMonth, today } from '../lib/dates'
+import { money, moneyInput, parseMoney } from '../lib/format'
+import { splitInstallments } from '../lib/installments'
+import { generateRecurring } from '../lib/services'
+import type { Kind, Transaction } from '../lib/types'
+import { useApp, type EditorMode } from '../store'
+import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from './Fields'
+import { Sheet } from './Sheet'
+
+type Mode = EditorMode
+
+/** Formulário de lançamento: gasto ou ganho, à vista, parcelado ou fixo mensal. */
+export function TxEditor({ initial, initialMode = 'single', onClose }: {
+  initial?: Partial<Transaction>
+  initialMode?: Mode
+  onClose: () => void
+}) {
+  const { run, idx } = useApp()
+  const editing = Boolean(initial?.id)
+  const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense')
+  const [amount, setAmount] = useState(moneyInput(initial?.amount))
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [date, setDate] = useState(initial?.date ?? today())
+  const [categoryId, setCategoryId] = useState<string | null>(initial?.category_id ?? null)
+  const [paymentId, setPaymentId] = useState<string | null>(initial?.payment_method_id ?? null)
+  const [paid, setPaid] = useState(initial?.paid ?? initialMode === 'single')
+  const [notes, setNotes] = useState(initial?.notes ?? '')
+  const [mode, setMode] = useState<Mode>(initialMode)
+  const [count, setCount] = useState('2')
+  const [creditor, setCreditor] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const value = parseMoney(amount)
+  const n = Math.max(1, Math.min(120, parseInt(count) || 1))
+  const valid = value > 0 && (description.trim() || categoryId)
+
+  function changeKind(k: Kind) {
+    setKind(k)
+    if (categoryId && idx.get(categoryId)?.kind !== k) setCategoryId(null)
+    if (k === 'income' && mode === 'installments') setMode('single')
+  }
+
+  async function save() {
+    if (!valid || saving) return
+    setSaving(true)
+    const desc = description.trim() || idx.get(categoryId)?.name || ''
+    const ok = await run(async () => {
+      if (mode === 'installments') {
+        await api.createPlan({
+          description: desc, creditor: creditor.trim() || null, category_id: categoryId,
+          payment_method_id: paymentId, total_amount: value, installments: n, first_due: date,
+          notes: notes.trim() || null, first_paid: paid,
+        })
+      } else if (mode === 'recurring') {
+        const bill = await api.saveRecurring({
+          description: desc, kind, amount: value, day_of_month: Number(date.slice(8)),
+          category_id: categoryId, payment_method_id: paymentId, start_month: startOfMonth(date),
+          end_month: null, active: true, generated_until: null, notes: notes.trim() || null,
+        })
+        await generateRecurring([bill])
+      } else {
+        await api.saveTransaction({
+          ...(initial as Transaction | undefined),
+          kind, amount: value, description: desc, date, category_id: categoryId,
+          payment_method_id: paymentId, paid,
+          paid_at: paid ? (initial?.paid_at ?? date) : null,
+          notes: notes.trim() || null,
+          installment_plan_id: initial?.installment_plan_id ?? null,
+          installment_number: initial?.installment_number ?? null,
+          recurring_bill_id: initial?.recurring_bill_id ?? null,
+          recurring_month: initial?.recurring_month ?? null,
+        })
+      }
+      return true
+    }, editing ? 'Lançamento atualizado' : mode === 'installments' ? `${n} parcelas criadas` : 'Lançamento salvo')
+    setSaving(false)
+    if (ok) onClose()
+  }
+
+  async function remove() {
+    if (!initial?.id) return
+    const msg = initial.installment_plan_id
+      ? 'Excluir somente esta parcela? (Para excluir a compra inteira, use a tela Contas › Parcelas.)'
+      : 'Excluir este lançamento?'
+    if (!confirm(msg)) return
+    const ok = await run(() => api.deleteTransaction(initial.id!).then(() => true), 'Lançamento excluído')
+    if (ok) onClose()
+  }
+
+  const future = date > today()
+  const paidLabel = kind === 'expense' ? (future ? 'Já está pago' : 'Pago') : future ? 'Já recebido' : 'Recebido'
+  const preview = mode === 'installments' && value > 0 ? splitInstallments(value, n, date) : []
+
+  return (
+    <Sheet
+      title={editing ? 'Editar lançamento' : 'Novo lançamento'}
+      onClose={onClose}
+      footer={
+        <>
+          {editing && <button className="btn danger ghost" onClick={remove}>Excluir</button>}
+          <button className="btn primary grow" disabled={!valid || saving} onClick={save}>
+            {saving ? 'Salvando…' : 'Salvar'}
+          </button>
+        </>
+      }
+    >
+      <Segmented
+        value={kind} onChange={changeKind}
+        options={[
+          { value: 'expense', label: 'Gasto', className: 'neg' },
+          { value: 'income', label: 'Ganho', className: 'pos' },
+        ]}
+      />
+
+      {editing && initial?.installment_plan_id && (
+        <p className="note">🧾 Parcela {initial.installment_number} de uma compra parcelada. As mudanças valem só para esta parcela.</p>
+      )}
+      {editing && initial?.recurring_bill_id && (
+        <p className="note">🔁 Lançamento de uma conta fixa. Para mudar todos os meses, edite em Contas › Fixas.</p>
+      )}
+
+      <Field label={mode === 'installments' ? 'Valor total da compra' : 'Valor'}>
+        <MoneyInput value={amount} onChange={setAmount} autoFocus={!editing} big />
+      </Field>
+
+      <Field label="Descrição">
+        <input
+          value={description} onChange={(e) => setDescription(e.target.value)}
+          placeholder={kind === 'expense' ? 'Ex.: Gasolina, Mercado, Lanche…' : 'Ex.: Salário, Venda…'}
+          maxLength={120}
+        />
+      </Field>
+
+      <div className="row2">
+        <Field label={mode === 'installments' ? '1º vencimento' : mode === 'recurring' ? 'Primeiro mês / dia' : 'Data'}>
+          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        </Field>
+        <Field label="Forma de pagamento">
+          <PaymentSelect value={paymentId} onChange={setPaymentId} />
+        </Field>
+      </div>
+
+      <Field label="Categoria">
+        <CategorySelect kind={kind} value={categoryId} onChange={setCategoryId} includeId={initial?.category_id} />
+      </Field>
+
+      {!editing && (
+        <Field label="Tipo de lançamento">
+          <Segmented
+            value={mode} onChange={setMode}
+            options={[
+              { value: 'single', label: 'Única vez' },
+              ...(kind === 'expense' ? [{ value: 'installments' as Mode, label: 'Parcelado' }] : []),
+              { value: 'recurring', label: 'Todo mês' },
+            ]}
+          />
+        </Field>
+      )}
+
+      {mode === 'installments' && (
+        <div className="card inset">
+          <div className="row2">
+            <Field label="Nº de parcelas">
+              <input type="number" inputMode="numeric" min={1} max={120} value={count} onChange={(e) => setCount(e.target.value)} />
+            </Field>
+            <Field label="Credor / loja">
+              <input value={creditor} onChange={(e) => setCreditor(e.target.value)} placeholder="Ex.: Loja do João" />
+            </Field>
+          </div>
+          {preview.length > 0 && (
+            <p className="muted small">
+              {n}x de {money(preview[n - 1].amount)}
+              {preview[0].amount !== preview[n - 1].amount && ` (1ª de ${money(preview[0].amount)})`}
+              {' · '}última em {preview[n - 1].date.split('-').reverse().join('/')}
+            </p>
+          )}
+        </div>
+      )}
+      {mode === 'recurring' && (
+        <p className="note">🔁 Será lançado automaticamente todo dia {Number(date.slice(8))} de cada mês, como conta a {kind === 'expense' ? 'pagar' : 'receber'}.</p>
+      )}
+
+      {mode !== 'recurring' && (
+        <Toggle
+          checked={paid} onChange={setPaid}
+          label={mode === 'installments' ? '1ª parcela já paga' : paidLabel}
+        />
+      )}
+
+      <Field label="Observações">
+        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional" />
+      </Field>
+    </Sheet>
+  )
+}

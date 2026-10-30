@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Minhas Finanças</string>
+    <string name="title_activity_main">Minhas Finanças</string>
+    <string name="package_name">br.com.minhasfinancas.app</string>
+    <string name="custom_url_scheme">br.com.minhasfinancas.app</string>
+</resources>
