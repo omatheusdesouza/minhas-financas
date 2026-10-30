@@ -18,6 +18,8 @@
     "@capacitor/preferences": "^6.0.3",
     "@capacitor/share": "^6.0.3",
     "@capacitor/status-bar": "^6.0.2",
+    "@fontsource/cormorant-garamond": "^5.1.0",
+    "@fontsource/inter": "^5.1.0",
     "@supabase/supabase-js": "^2.45.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -26,6 +28,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0",
+    "@fontsource/cinzel": "^5.1.0",
+    "@fontsource/playfair-display": "^5.1.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
