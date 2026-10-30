@@ -1,6 +1,7 @@
--- Fynvault — esquema do banco (Supabase / PostgreSQL)
+-- Fynvault — migration 0001: esquema inicial (Supabase / PostgreSQL)
 -- Cole este arquivo inteiro no "SQL Editor" do Supabase e clique em "Run".
 -- Cada usuário só enxerga e altera os próprios dados (Row Level Security).
+-- Pode ser executado mais de uma vez sem apagar dados.
 
 create extension if not exists pgcrypto;
 
@@ -168,3 +169,11 @@ begin
 end $$;
 
 grant execute on function public.create_installment_plan(text, text, uuid, uuid, numeric, int, date, text, boolean) to authenticated;
+
+-- Controle das migrations aplicadas
+create table if not exists public.app_migrations (
+  version     text primary key,
+  applied_at  timestamptz not null default now()
+);
+alter table public.app_migrations enable row level security;
+insert into public.app_migrations(version) values ('0001') on conflict do nothing;
