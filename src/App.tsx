@@ -61,7 +61,10 @@ function Shell() {
 
   // Ao voltar para o app: atualiza os dados (e, com eles, a agenda)
   useEffect(() => {
-    const h = CapApp.addListener('resume', () => bump())
+    const h = CapApp.addListener('resume', () => {
+      bump()
+      api.sync?.().catch(() => {})
+    })
     return () => { h.then((x) => x.remove()).catch(() => {}) }
   }, [bump])
 

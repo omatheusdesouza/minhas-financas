@@ -508,3 +508,17 @@ input:disabled { opacity: .6; }
 .pin-extra { display: grid; }
 .pin-bio { color: var(--gold-ink) !important; }
 .pin-prompt { font-weight: 600; margin: 0; }
+
+/* ---------- Fase 3E: sincronização ---------- */
+.sync-banner { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  background: color-mix(in srgb, var(--gold) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); }
+.sync-banner.off { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; animation: pulse 1.6s infinite; }
+.sync-banner.off .sync-dot, .sync-dot.off { background: var(--warn); animation: none; }
+.sync-dot.inline { display: inline-block; margin-right: 4px; animation: none; }
+.sync-dot.ok { background: var(--good); }
+.sync-dot.wait { background: var(--gold); }
+@keyframes pulse { 50% { opacity: .35; } }
+.first-sync { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; max-width: 420px; margin: 0 auto; }
+.first-sync img { border-radius: 18px; }
+.first-sync p { margin: 0; }

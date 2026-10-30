@@ -6,6 +6,7 @@ import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
 import { ProfileForm, draftFrom, nameError, saveProfileDraft } from '../components/ProfileForm'
 import { ReminderSettings } from '../components/Reminders'
 import { SecuritySettings } from '../components/SecuritySettings'
+import { SyncSettings } from '../components/SyncBadge'
 import { useLock } from '../lockContext'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
@@ -17,7 +18,7 @@ import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
 import { useApp } from '../store'
 
 export function Settings() {
-  const { user, run, profile } = useApp()
+  const { user, run, profile, sync } = useApp()
   const lock = useLock()
   const [pwOpen, setPwOpen] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme())
@@ -59,6 +60,8 @@ export function Settings() {
         <p className="muted small">No automático, o Fynvault segue o tema do celular.</p>
       </section>
 
+      <SyncSettings />
+
       <ReminderSettings />
 
       <SecuritySettings />
@@ -70,7 +73,11 @@ export function Settings() {
         <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
         {api.mode === 'cloud' && <button onClick={() => setPwOpen(true)}><Icon name="user" /> Trocar senha <Icon name="right" className="end" /></button>}
         <button className="danger-text" onClick={async () => {
-          if (!confirm('Sair da sua conta? O bloqueio por PIN deste celular também é removido.')) return
+          const pending = sync?.pending ?? 0
+          const msg = pending
+            ? `Atenção: ${pending} alteração(ões) ainda não foram enviadas para a nuvem e serão perdidas se você sair agora. Conecte-se à internet e toque em "Sincronizar agora" antes. Sair mesmo assim?`
+            : 'Sair da sua conta? Os dados ficam salvos na nuvem; a cópia deste celular e o bloqueio por PIN são removidos.'
+          if (!confirm(msg)) return
           await lock.clear()
           await api.signOut()
         }}><Icon name="logout" /> Sair</button>

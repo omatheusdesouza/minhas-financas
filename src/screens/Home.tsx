@@ -6,6 +6,7 @@ import { ContributionSheet } from '../components/ContributionSheet'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
 import { PermissionHelp, useReminderPermission } from '../components/Reminders'
+import { SyncBanner } from '../components/SyncBadge'
 import { TxRow } from '../components/TxRow'
 import { api } from '../lib/api'
 import { addDays, fmt, previousPeriod, today } from '../lib/dates'
@@ -92,6 +93,7 @@ export function Home() {
         <Link to="/ajustes" className="icon-btn" aria-label="Ajustes"><Icon name="gear" /></Link>
       </header>
 
+      <SyncBanner />
       <PeriodPicker value={p} onChange={setP} presets={false} />
 
       {!view ? <div className="skeleton tall" /> : (

@@ -1,26 +1,31 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Backend, User } from './backend'
-import type { Category, GoalContribution, InstallmentPlan, Profile, RecurringBill, SavingsGoal, Transaction } from './types'
+import { RemoteError, type Remote } from './sync'
+import type { TableName } from './tables'
 
-const num = (v: unknown) => (v == null ? v : Number(v))
+/**
+ * Supabase: login, arquivos (fotos e comprovantes) e o envio/busca usados pela sincronização.
+ * Os dados em si são lidos e gravados na cópia local (ver cloudBackend.ts).
+ */
 
-function normTx(r: any): Transaction {
-  return { ...r, amount: num(r.amount) as number | null }
+const num = (v: unknown) => (v == null ? null : Number(v))
+
+/** Colunas numeric chegam como texto em alguns casos: normaliza para número. */
+const NUMERIC: Partial<Record<TableName, string[]>> = {
+  transactions: ['amount'],
+  recurring_bills: ['amount'],
+  installment_plans: ['total_amount'],
+  categories: ['monthly_budget'],
+  savings_goals: ['target_amount', 'monthly_contribution'],
+  goal_contributions: ['amount'],
 }
-function normCat(r: any): Category {
-  return { ...r, monthly_budget: num(r.monthly_budget) }
-}
-function normPlan(r: any): InstallmentPlan {
-  return { ...r, total_amount: Number(r.total_amount) }
-}
-function normRec(r: any): RecurringBill {
-  return { ...r, amount: num(r.amount) as number | null }
-}
-function normGoal(r: any): SavingsGoal {
-  return { ...r, target_amount: Number(r.target_amount), monthly_contribution: num(r.monthly_contribution) as number | null }
-}
-function normContrib(r: any): GoalContribution {
-  return { ...r, amount: Number(r.amount) }
+/** Colunas de data (sem hora): sempre "AAAA-MM-DD". */
+const DATES = ['date', 'paid_at', 'first_due', 'start_month', 'end_month', 'generated_until', 'recurring_month', 'target_date']
+function normalize(t: TableName, r: any) {
+  const out = { ...r }
+  for (const c of NUMERIC[t] ?? []) out[c] = num(r[c])
+  for (const c of DATES) if (typeof out[c] === 'string' && out[c].length > 10) out[c] = out[c].slice(0, 10)
+  return out
 }
 
 const EXT: Record<string, string> = {
@@ -28,7 +33,7 @@ const EXT: Record<string, string> = {
 }
 
 /** Mensagens de erro do Supabase traduzidas para o usuário. */
-function translate(message: string): string {
+export function translate(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.'
   if (m.includes('email not confirmed')) return 'Confirme seu e-mail pelo link que enviamos antes de entrar.'
@@ -38,13 +43,28 @@ function translate(message: string): string {
   if (m.includes('payload too large') || m.includes('exceeded the maximum allowed size')) return 'Arquivo grande demais.'
   if (m.includes('mime type') || m.includes('invalid_mime')) return 'Tipo de arquivo não permitido. Use foto (JPG/PNG) ou PDF.'
   if (m.includes('rate limit')) return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'
-  if (m.includes('failed to fetch') || m.includes('network')) return 'Sem conexão com a internet.'
+  if (isNetworkMessage(m)) return 'Sem conexão com a internet.'
   return message
 }
+
+const isNetworkMessage = (m: string) =>
+  /failed to fetch|networkerror|network request failed|load failed|fetch failed|timeout/i.test(m)
 
 function check(res: { data: any; error: { message: string } | null }): any {
   if (res.error) throw new Error(translate(res.error.message))
   return res.data
+}
+
+/** Classifica um erro do Supabase para a sincronização decidir: tentar de novo ou descartar. */
+export function classify(res: { error: any; status?: number }): RemoteError {
+  const e = res.error ?? {}
+  const msg = String(e.message ?? e)
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false
+  if (offline || isNetworkMessage(msg) || !res.status || res.status >= 500 || res.status === 401 || res.status === 408 || res.status === 429) {
+    return new RemoteError(msg, 'network') // tenta de novo depois
+  }
+  if (e.code === '23505') return new RemoteError(msg, 'duplicate')
+  return new RemoteError(translate(msg), 'permanent')
 }
 
 function toUser(u: { id: string; email?: string } | null | undefined): User | null {
@@ -52,23 +72,31 @@ function toUser(u: { id: string; email?: string } | null | undefined): User | nu
 }
 
 /** Remove campos que o banco preenche sozinho antes de gravar. */
-function clean<T extends object>(o: T): T {
-  const c: any = { ...o }
-  if (!c.id) delete c.id
-  delete c.user_id
+function forUpload(t: TableName, o: any) {
+  const c = { ...o }
+  if (t !== 'profiles') delete c.user_id
   delete c.created_at
   delete c.updated_at
   return c
 }
 
-export function createSupabaseBackend(url: string, key: string): Backend {
-  const sb: SupabaseClient = createClient(url, key, {
+export function createSupabase(url: string, key: string): SupabaseClient {
+  return createClient(url, key, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   })
+}
 
+export type AuthAndFiles = Pick<Backend,
+  | 'getUser' | 'onAuthChange' | 'signIn' | 'signUp' | 'resetPassword' | 'verifyRecovery' | 'updatePassword' | 'signOut'
+  | 'uploadFile' | 'fileUrl' | 'removeFile'>
+
+export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
+  const needOnline = () => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw new Error('Sem internet. Anexe o arquivo quando a conexão voltar.')
+    }
+  }
   return {
-    mode: 'cloud',
-
     async getUser() {
       const { data } = await sb.auth.getSession()
       return toUser(data.session?.user)
@@ -97,131 +125,8 @@ export function createSupabaseBackend(url: string, key: string): Backend {
       await sb.auth.signOut()
     },
 
-    async listCategories() {
-      const data = check(await sb.from('categories').select('*').order('sort_order').order('name'))
-      return (data ?? []).map(normCat)
-    },
-    async saveCategory(c) {
-      return normCat(check(await sb.from('categories').upsert(clean(c)).select().single()))
-    },
-    async deleteCategory(id) {
-      check(await sb.from('categories').delete().eq('id', id))
-    },
-
-    async listPaymentMethods() {
-      return check(await sb.from('payment_methods').select('*').order('name')) ?? []
-    },
-    async savePaymentMethod(p) {
-      return check(await sb.from('payment_methods').upsert(clean(p)).select().single())
-    },
-    async deletePaymentMethod(id) {
-      check(await sb.from('payment_methods').delete().eq('id', id))
-    },
-
-    async listTransactions(from, to) {
-      const data = check(
-        await sb.from('transactions').select('*').gte('date', from).lte('date', to)
-          .order('date', { ascending: false }).order('created_at', { ascending: false }).limit(10000),
-      )
-      return (data ?? []).map(normTx)
-    },
-    async listUnpaid(until) {
-      const data = check(
-        await sb.from('transactions').select('*').eq('paid', false).lte('date', until).order('date').limit(5000),
-      )
-      return (data ?? []).map(normTx)
-    },
-    async listPlanTransactions() {
-      const data = check(
-        await sb.from('transactions').select('*').not('installment_plan_id', 'is', null)
-          .order('installment_number').limit(10000),
-      )
-      return (data ?? []).map(normTx)
-    },
-    async saveTransaction(t) {
-      return normTx(check(await sb.from('transactions').upsert(clean(t)).select().single()))
-    },
-    async updateTransactions(ids, patch) {
-      if (!ids.length) return
-      check(await sb.from('transactions').update(clean(patch)).in('id', ids))
-    },
-    async deleteTransaction(id) {
-      check(await sb.from('transactions').delete().eq('id', id))
-    },
-    async insertRecurringTransactions(ts) {
-      if (!ts.length) return
-      check(
-        await sb.from('transactions')
-          .upsert(ts.map(clean), { onConflict: 'recurring_bill_id,recurring_month', ignoreDuplicates: true }),
-      )
-    },
-
-    async listPlans() {
-      const data = check(await sb.from('installment_plans').select('*').order('first_due', { ascending: false }))
-      return (data ?? []).map(normPlan)
-    },
-    async createPlan(p) {
-      return check(
-        await sb.rpc('create_installment_plan', {
-          p_description: p.description,
-          p_creditor: p.creditor,
-          p_category_id: p.category_id,
-          p_payment_method_id: p.payment_method_id,
-          p_total_amount: p.total_amount,
-          p_installments: p.installments,
-          p_first_due: p.first_due,
-          p_notes: p.notes,
-          p_first_paid: p.first_paid,
-        }),
-      ) as string
-    },
-    async updatePlan(id, patch) {
-      check(await sb.from('installment_plans').update(clean(patch)).eq('id', id))
-    },
-    async deletePlan(id) {
-      check(await sb.from('installment_plans').delete().eq('id', id))
-    },
-
-    async listRecurring() {
-      const data = check(await sb.from('recurring_bills').select('*').order('day_of_month'))
-      return (data ?? []).map(normRec)
-    },
-    async saveRecurring(r) {
-      return normRec(check(await sb.from('recurring_bills').upsert(clean(r)).select().single()))
-    },
-    async deleteRecurring(id) {
-      check(await sb.from('recurring_bills').delete().eq('id', id))
-    },
-
-    async getProfile() {
-      return check(await sb.from('profiles').select('*').maybeSingle()) as Profile | null
-    },
-    async saveProfile(p) {
-      return check(await sb.from('profiles').upsert(clean(p)).select().single()) as Profile
-    },
-
-    async listGoals() {
-      const data = check(await sb.from('savings_goals').select('*').order('created_at'))
-      return (data ?? []).map(normGoal)
-    },
-    async saveGoal(g) {
-      return normGoal(check(await sb.from('savings_goals').upsert(clean(g)).select().single()))
-    },
-    async deleteGoal(id) {
-      check(await sb.from('savings_goals').delete().eq('id', id))
-    },
-    async listContributions() {
-      const data = check(await sb.from('goal_contributions').select('*').order('date', { ascending: false }).limit(5000))
-      return (data ?? []).map(normContrib)
-    },
-    async saveContribution(c) {
-      return normContrib(check(await sb.from('goal_contributions').upsert(clean(c)).select().single()))
-    },
-    async deleteContribution(id) {
-      check(await sb.from('goal_contributions').delete().eq('id', id))
-    },
-
     async uploadFile(bucket, name, file) {
+      needOnline()
       const { data } = await sb.auth.getSession()
       const uid = data.session?.user.id
       if (!uid) throw new Error('Faça login novamente.')
@@ -236,6 +141,50 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     },
     async removeFile(bucket, path) {
       check(await sb.storage.from(bucket).remove([path]))
+    },
+  }
+}
+
+/** Envio e busca para a sincronização. */
+export function supabaseRemote(sb: SupabaseClient): Remote {
+  const PAGE = 1000
+  const run = async <T,>(p: PromiseLike<{ data: T; error: any; status: number }>): Promise<T> => {
+    let res: { data: T; error: any; status: number }
+    try {
+      res = await p
+    } catch (e) {
+      throw new RemoteError(String(e), 'network')
+    }
+    if (res.error) throw classify(res)
+    return res.data
+  }
+  return {
+    async upsert(t, rows) {
+      await run(sb.from(t).upsert(rows.map((r) => forUpload(t, r)), { onConflict: t === 'profiles' ? 'user_id' : 'id' }))
+    },
+    async remove(t, ids) {
+      await run(sb.from(t).delete().in(t === 'profiles' ? 'user_id' : 'id', ids))
+    },
+    async changedSince(t, since) {
+      const out: any[] = []
+      for (let from = 0; ; from += PAGE) {
+        let q = sb.from(t).select('*').order('updated_at').range(from, from + PAGE - 1)
+        if (since) q = q.gt('updated_at', since)
+        const page = (await run(q)) as any[]
+        out.push(...page.map((r) => normalize(t, r)))
+        if (page.length < PAGE) return out
+      }
+    },
+    async deletedSince(since) {
+      return (await run(sb.from('deleted_rows').select('table_name,row_id,deleted_at').gt('deleted_at', since).order('deleted_at').limit(5000))) as any[]
+    },
+    async fetchRow(t, id) {
+      const r = await run(sb.from(t).select('*').eq(t === 'profiles' ? 'user_id' : 'id', id).maybeSingle())
+      return r ? normalize(t, r) : null
+    },
+    async findRecurring(billId, month) {
+      const r = await run(sb.from('transactions').select('*').eq('recurring_bill_id', billId).eq('recurring_month', month).maybeSingle())
+      return r ? normalize('transactions', r) : null
     },
   }
 }

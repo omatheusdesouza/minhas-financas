@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from './lib/api'
-import type { User } from './lib/backend'
+import { FirstSyncOfflineError, SchemaOutdatedError, type User } from './lib/backend'
 import { CategoryIndex, generateRecurring, seedIfEmpty } from './lib/services'
+import type { SyncStatus } from './lib/sync'
 import type { Category, PaymentMethod, Profile, Transaction } from './lib/types'
 
 interface Toast {
@@ -19,6 +20,8 @@ interface TxEditor {
 
 interface AppState {
   user: User
+  /** estado da sincronização (null no modo demonstração) */
+  sync: SyncStatus | null
   profile: Profile | null
   /** Link temporário da foto de perfil (bucket privado) */
   avatarUrl: string | null
@@ -48,6 +51,8 @@ const prepared = new Map<string, Promise<void>>()
 function prepare(userId: string) {
   if (!prepared.has(userId)) {
     const p = (async () => {
+      // modo nuvem: abre a cópia local e, no 1º acesso do aparelho, baixa os dados
+      await api.prepare?.()
       await seedIfEmpty()
       await generateRecurring(await api.listRecurring())
     })()
@@ -92,6 +97,10 @@ export function AppProvider({ user, children, onboarding }: {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [payTarget, setPayTarget] = useState<Transaction | null>(null)
+  const [sync, setSync] = useState<SyncStatus | null>(null)
+  const [firstSyncOffline, setFirstSyncOffline] = useState(false)
+  const [schemaOutdated, setSchemaOutdated] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
   const [categories, setCategories] = useState<Category[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [ready, setReady] = useState(false)
@@ -137,20 +146,41 @@ export function AppProvider({ user, children, onboarding }: {
   useEffect(() => {
     ;(async () => {
       try {
+        setFirstSyncOffline(false)
+        setSchemaOutdated(null)
         await prepare(user.id)
         await Promise.all([reloadMeta(), reloadProfile()])
+        setReady(true)
       } catch (e: any) {
+        if (e instanceof FirstSyncOfflineError) return setFirstSyncOffline(true)
+        if (e instanceof SchemaOutdatedError) return setSchemaOutdated(e.migration)
         toast(e?.message ?? String(e), 'error')
-      } finally {
         setReady(true)
       }
     })()
-  }, [user.id, reloadMeta, reloadProfile, toast])
+  }, [user.id, reloadMeta, reloadProfile, toast, attempt])
+
+  // Sincronização: status e dados que chegam de outro aparelho
+  useEffect(() => {
+    const offStatus = api.onSyncStatus?.(setSync)
+    const offChange = api.onRemoteChange?.(() => {
+      reloadMeta().catch(() => {})
+      reloadProfile().catch(() => {})
+      bump()
+    })
+    return () => { offStatus?.(); offChange?.() }
+  }, [reloadMeta, reloadProfile, bump])
+
+  // Avisa uma vez quando a nuvem recusar alguma alteração
+  const failedCount = sync?.failed.length ?? 0
+  useEffect(() => {
+    if (failedCount) toast(`${failedCount} alteração(ões) não puderam ser salvas na nuvem e foram desfeitas.`, 'error')
+  }, [failedCount, toast])
 
   const idx = useMemo(() => new CategoryIndex(categories), [categories])
 
   const value: AppState = {
-    user, profile, avatarUrl, reloadProfile, categories, idx, paymentMethods, version, bump, reloadMeta, toast, run,
+    user, sync, profile, avatarUrl, reloadProfile, categories, idx, paymentMethods, version, bump, reloadMeta, toast, run,
     editor,
     openEditor: (tx, mode) => setEditor({ tx, mode }),
     closeEditor: () => setEditor(null),
@@ -162,7 +192,25 @@ export function AppProvider({ user, children, onboarding }: {
 
   return (
     <Ctx.Provider value={value}>
-      {!ready ? <div className="splash"><div className="spinner" /></div> : onboarded ? children : onboarding}
+      {schemaOutdated ? (
+        <div className="splash first-sync">
+          <img src="./brand/icon.svg" alt="" width={72} height={72} />
+          <h2>Atualização do banco de dados</h2>
+          <p className="muted">
+            Esta versão do Fynvault precisa que o banco de dados no Supabase seja atualizado. Aplique o arquivo
+            <b> supabase/migrations/{schemaOutdated}_*.sql</b> no SQL Editor do Supabase e toque em "Tentar de novo".
+            Seus dados estão seguros: nada foi alterado.
+          </p>
+          <button className="btn primary" onClick={() => { prepared.delete(user.id); setAttempt((a) => a + 1) }}>Tentar de novo</button>
+        </div>
+      ) : firstSyncOffline ? (
+        <div className="splash first-sync">
+          <img src="./brand/icon.svg" alt="" width={72} height={72} />
+          <h2>Sem internet</h2>
+          <p className="muted">Conecte-se à internet para baixar seus dados neste aparelho pela primeira vez. Depois disso, o Fynvault funciona mesmo offline.</p>
+          <button className="btn primary" onClick={() => { prepared.delete(user.id); setAttempt((a) => a + 1) }}>Tentar de novo</button>
+        </div>
+      ) : !ready ? <div className="splash"><div className="spinner" /></div> : onboarded ? children : onboarding}
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>{t.text}</div>

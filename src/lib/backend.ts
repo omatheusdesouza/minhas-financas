@@ -1,3 +1,4 @@
+import type { SyncStatus } from './sync'
 import type {
   Bucket, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
   RecurringBill, SavingsGoal, Transaction,
@@ -63,4 +64,27 @@ export interface Backend {
   /** Link temporário para ver um arquivo privado. */
   fileUrl(bucket: Bucket, path: string): Promise<string>
   removeFile(bucket: Bucket, path: string): Promise<void>
+
+  // Sincronização (só no modo nuvem)
+  /** Prepara a cópia local; no primeiro acesso do aparelho, baixa os dados (precisa de internet). */
+  prepare?(): Promise<void>
+  /** Envia a fila e busca novidades agora. */
+  sync?(): Promise<boolean>
+  onSyncStatus?(cb: (s: SyncStatus) => void): () => void
+  /** Dados chegaram da nuvem (outro aparelho): as telas devem recarregar. */
+  onRemoteChange?(cb: () => void): () => void
+}
+
+/** Primeiro acesso no aparelho sem internet: não dá para baixar os dados ainda. */
+export class FirstSyncOfflineError extends Error {
+  constructor() {
+    super('Conecte-se à internet para baixar seus dados neste aparelho pela primeira vez.')
+  }
+}
+
+/** O banco na nuvem ainda não recebeu a migration necessária para esta versão do app. */
+export class SchemaOutdatedError extends Error {
+  constructor(public migration: string) {
+    super(`O banco de dados precisa ser atualizado (migration ${migration}).`)
+  }
 }
