@@ -48,7 +48,6 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
         ) : (
           <button
             className="icon-btn pay-btn" aria-label={t.kind === 'expense' ? 'Marcar como paga' : 'Marcar como recebido'}
-            title={t.kind === 'expense' ? 'Marcar como paga' : 'Marcar como recebido'}
             onClick={() => openPay(t)}
           >
             <Icon name="check" />

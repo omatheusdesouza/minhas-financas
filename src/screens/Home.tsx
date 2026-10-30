@@ -22,7 +22,8 @@ export function Home() {
   const { idx, profile, space, canEdit } = useApp()
   const nav = useNavigate()
   const [p, setP] = useState(initialPeriod('mes'))
-  const [showHealth, setShowHealth] = useState(false)
+  // No computador o detalhe da saúde financeira já abre expandido
+  const [showHealth, setShowHealth] = useState(() => window.matchMedia?.('(min-width: 1024px)').matches ?? false)
   const [contribGoal, setContribGoal] = useState<SavingsGoal | null>(null)
   const reminders = useReminderPermission()
   const [hideReminderCard, setHideReminderCard] = useState(() => {
@@ -105,151 +106,158 @@ export function Home() {
 
       {!view ? <div className="skeleton tall" /> : (
         <>
-          <section className="card hero">
-            <p className="hero-label">Saldo previsto do mês</p>
-            <p className={`hero-value ${view.income - view.expense < 0 ? 'neg' : ''}`}>{money(view.income - view.expense)}</p>
-            <div className="hero-split">
-              <div><span className="dot pos" /> Ganhos<strong>{money(view.income)}</strong></div>
-              <div><span className="dot neg" /> Gastos<strong>{money(view.expense)}</strong></div>
-            </div>
-            <div className="hero-foot muted small">
-              <span>Já realizado: <b>{money(view.realized)}</b></span>
-              {view.pendingAmounts > 0 && <span>{view.pendingAmounts} conta(s) com valor estimado</span>}
-            </div>
-          </section>
-
-          <section className="stat-grid">
-            <Link to="/contas?tab=fixas" className="card stat">
-              <span className="stat-label">Renda fixa</span>
-              <strong className="pos">{money(view.fixedIncome)}</strong>
-              <span className="muted small">por mês</span>
-            </Link>
-            <Link to="/contas?tab=fixas" className="card stat">
-              <span className="stat-label">Gastos fixos</span>
-              <strong className="neg">{view.hasVariable ? '≈ ' : ''}{money(view.fixedExpense)}</strong>
-              <span className="muted small">
-                {view.fixedIncome > 0 ? `${pct(view.fixedExpense / view.fixedIncome)} da renda fixa` : 'por mês'}
-                {view.variableNoEstimate > 0 && ` · +${view.variableNoEstimate} variável(is)`}
-              </span>
-            </Link>
-          </section>
-
-          {view.goal ? (
-            <div className="card goal-card" role="link" tabIndex={0} onClick={() => nav('/metas')}>
-              <div className="goal-top">
-                <span className="goal-icon">{view.goal.icon}</span>
-                <div className="grow">
-                  <span className="stat-label">Meta · {view.goal.name}</span>
-                  <strong>{money(view.saved)} <span className="muted small">de {money(view.goal.target_amount)}</span></strong>
+          {/* No celular as colunas somem (display: contents) e a ordem vem das classes o-N */}
+          <div className="dash">
+            <div className="dash-main">
+              <section className="card hero o-1">
+                <p className="hero-label">Saldo previsto do mês</p>
+                <p className={`hero-value ${view.income - view.expense < 0 ? 'neg' : ''}`}>{money(view.income - view.expense)}</p>
+                <div className="hero-split">
+                  <div><span className="dot pos" /> Ganhos<strong>{money(view.income)}</strong></div>
+                  <div><span className="dot neg" /> Gastos<strong>{money(view.expense)}</strong></div>
                 </div>
-                <span className="goal-pct">{pct(Math.min(1, view.saved / view.goal.target_amount))}</span>
-              </div>
-              <span className="bar gold"><span style={{ width: `${Math.min(100, (view.saved / view.goal.target_amount) * 100)}%` }} /></span>
-              <div className="goal-foot">
-                <span className="muted small">
-                  {view.saved >= view.goal.target_amount ? 'Meta alcançada! 🎉'
-                    : view.goal.monthly_contribution ? `Aporte de ${money(view.goal.monthly_contribution)}/mês` : 'Ver detalhes'}
-                  {view.otherGoals > 0 && ` · +${view.otherGoals} meta(s)`}
-                </span>
-                {canEdit && view.saved < view.goal.target_amount && (
-                  <button className="btn ghost sm-btn gold-btn" onClick={(e) => { e.stopPropagation(); setContribGoal(view.goal) }}>Aportar</button>
-                )}
-              </div>
-            </div>
-          ) : canEdit && (
-            <Link to="/metas" className="card goal-empty"><span className="goal-icon">🎯</span>
-              <span className="grow"><b>Crie uma meta de economia</b><span className="muted small"> · reserva, viagem, carro…</span></span>
-              <Icon name="right" /></Link>
-          )}
-
-          {view.highlights.length > 0 && (
-            <section className="card">
-              <div className="card-title"><h3>Destaques do mês</h3><Link to="/relatorios" className="link">Relatórios</Link></div>
-              <p className="muted small">Comparado com {view.prevLabel.toLowerCase()}</p>
-              <ul className="insights">{view.highlights.map((h) => (
-                <li key={h} className={/subiu|novo gasto/.test(h) ? 'up' : 'down'}>{h}</li>
-              ))}</ul>
-            </section>
-          )}
-
-          {!space.role && !hideReminderCard && (reminders.state === 'prompt' || reminders.state === 'denied') && (
-            <section className="card reminder-card">
-              <div className="card-title"><h3>🔔 Ative os lembretes</h3>
-                <button className="link muted" onClick={() => {
-                  setHideReminderCard(true)
-                  try { localStorage.setItem('fv-reminder-card', 'hidden') } catch { /* sem armazenamento */ }
-                }}>Agora não</button>
-              </div>
-              <p className="muted small">Avisamos 2 dias antes, no dia e se alguma conta vencer, mesmo com o app fechado.</p>
-              {reminders.state === 'prompt'
-                ? <button className="btn primary block" onClick={reminders.ask}>Permitir notificações</button>
-                : <PermissionHelp state="denied" />}
-            </section>
-          )}
-
-          <section className="card">
-            <div className="card-title">
-              <h3>Próximas contas</h3>
-              <Link to="/contas" className="link">Ver todas</Link>
-            </div>
-            {view.upcoming.length ? (
-              <>
-                <div className="legend">
-                  <span><i className="lg good" /> Em dia</span><span><i className="lg warn" /> Perto de vencer</span><span><i className="lg bad" /> Vencida ou crítica</span>
+                <div className="hero-foot muted small">
+                  <span>Já realizado: <b>{money(view.realized)}</b></span>
+                  {view.pendingAmounts > 0 && <span>{view.pendingAmounts} conta(s) com valor estimado</span>}
                 </div>
-                {view.upcoming.slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)}
-              </>
-            ) : <p className="empty">Nenhuma conta a pagar nos próximos 30 dias. 🎉</p>}
-          </section>
+              </section>
 
-          <section className="card health" onClick={() => setShowHealth((v) => !v)}>
-            <div className="health-head">
-              <ScoreRing score={view.health.score} color={view.health.color} />
-              <div>
-                <p className="muted small">Saúde financeira</p>
-                <h2 style={{ color: view.health.color }}>{view.health.level}</h2>
-                <p className="small">{view.health.tips[0]}</p>
-              </div>
+              <section className="stat-grid o-2">
+                <Link to="/contas?tab=fixas" className="card stat">
+                  <span className="stat-label">Renda fixa</span>
+                  <strong className="pos">{money(view.fixedIncome)}</strong>
+                  <span className="muted small">por mês</span>
+                </Link>
+                <Link to="/contas?tab=fixas" className="card stat">
+                  <span className="stat-label">Gastos fixos</span>
+                  <strong className="neg">{view.hasVariable ? '≈ ' : ''}{money(view.fixedExpense)}</strong>
+                  <span className="muted small">
+                    {view.fixedIncome > 0 ? `${pct(view.fixedExpense / view.fixedIncome)} da renda fixa` : 'por mês'}
+                    {view.variableNoEstimate > 0 && ` · +${view.variableNoEstimate} variável(is)`}
+                  </span>
+                </Link>
+              </section>
+
+              <section className="card o-6">
+                <div className="card-title">
+                  <h3>Próximas contas</h3>
+                  <Link to="/contas" className="link">Ver todas</Link>
+                </div>
+                {view.upcoming.length ? (
+                  <>
+                    <div className="legend">
+                      <span><i className="lg good" /> Em dia</span><span><i className="lg warn" /> Perto de vencer</span><span><i className="lg bad" /> Vencida ou crítica</span>
+                    </div>
+                    {view.upcoming.slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)}
+                  </>
+                ) : <p className="empty">Nenhuma conta a pagar nos próximos 30 dias. 🎉</p>}
+              </section>
+
+              <section className="card o-9">
+                <div className="card-title">
+                  <h3>Últimos lançamentos</h3>
+                  <Link to="/lancamentos" className="link">Ver todos</Link>
+                </div>
+                {view.month.length
+                  ? view.month.filter((t) => amt(t) > 0 || t.paid).slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)
+                  : <p className="empty">Nada por aqui ainda.</p>}
+              </section>
             </div>
-            {showHealth && (
-              <div className="health-detail">
-                {view.health.factors.map((f) => (
-                  <div key={f.label} className="factor">
-                    <div className="factor-top"><span>{f.label}</span><span className="muted">{f.points}/{f.max}</span></div>
-                    <span className="bar"><span style={{ width: `${(f.points / f.max) * 100}%`, background: view.health.color }} /></span>
-                    <span className="muted small">{f.detail}</span>
+            <div className="dash-side">
+              <section className="card health o-7" onClick={() => setShowHealth((v) => !v)}>
+                <div className="health-head">
+                  <ScoreRing score={view.health.score} color={view.health.color} />
+                  <div>
+                    <p className="muted small">Saúde financeira</p>
+                    <h2 style={{ color: view.health.color }}>{view.health.level}</h2>
+                    <p className="small">{view.health.tips[0]}</p>
                   </div>
-                ))}
-                {view.health.tips.length > 1 && (
-                  <ul className="tips">{view.health.tips.slice(1).map((t) => <li key={t}>{t}</li>)}</ul>
+                </div>
+                {showHealth && (
+                  <div className="health-detail">
+                    {view.health.factors.map((f) => (
+                      <div key={f.label} className="factor">
+                        <div className="factor-top"><span>{f.label}</span><span className="muted">{f.points}/{f.max}</span></div>
+                        <span className="bar"><span style={{ width: `${(f.points / f.max) * 100}%`, background: view.health.color }} /></span>
+                        <span className="muted small">{f.detail}</span>
+                      </div>
+                    ))}
+                    {view.health.tips.length > 1 && (
+                      <ul className="tips">{view.health.tips.slice(1).map((t) => <li key={t}>{t}</li>)}</ul>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-            <p className="muted small center">{showHealth ? 'Toque para recolher' : 'Toque para ver o detalhe'}</p>
-          </section>
+                <p className="muted small center">{showHealth ? 'Toque para recolher' : 'Toque para ver o detalhe'}</p>
+              </section>
 
-          <section className="card">
-            <div className="card-title"><h3>Para onde foi o dinheiro</h3></div>
-            {view.slices.length ? (
-              <>
-                <Donut data={view.slices} total={view.spent} label="Gastos" />
-                <SliceList
-                  data={view.slices} total={view.spent} budgets={view.budgets}
-                  onPick={(s) => nav(`/lancamentos?cat=${s.id}&from=${from}&to=${to}`)}
-                />
-              </>
-            ) : <p className="empty">Nenhum gasto neste período. Toque no <b>+</b> para lançar.</p>}
-          </section>
+              {view.goal ? (
+                <div className="card goal-card o-3" role="link" tabIndex={0} onClick={() => nav('/metas')}>
+                  <div className="goal-top">
+                    <span className="goal-icon">{view.goal.icon}</span>
+                    <div className="grow">
+                      <span className="stat-label">Meta · {view.goal.name}</span>
+                      <strong>{money(view.saved)} <span className="muted small">de {money(view.goal.target_amount)}</span></strong>
+                    </div>
+                    <span className="goal-pct">{pct(Math.min(1, view.saved / view.goal.target_amount))}</span>
+                  </div>
+                  <span className="bar gold"><span style={{ width: `${Math.min(100, (view.saved / view.goal.target_amount) * 100)}%` }} /></span>
+                  <div className="goal-foot">
+                    <span className="muted small">
+                      {view.saved >= view.goal.target_amount ? 'Meta alcançada! 🎉'
+                        : view.goal.monthly_contribution ? `Aporte de ${money(view.goal.monthly_contribution)}/mês` : 'Ver detalhes'}
+                      {view.otherGoals > 0 && ` · +${view.otherGoals} meta(s)`}
+                    </span>
+                    {canEdit && view.saved < view.goal.target_amount && (
+                      <button className="btn ghost sm-btn gold-btn" onClick={(e) => { e.stopPropagation(); setContribGoal(view.goal) }}>Aportar</button>
+                    )}
+                  </div>
+                </div>
+              ) : canEdit && (
+                <Link to="/metas" className="card goal-empty o-3"><span className="goal-icon">🎯</span>
+                  <span className="grow"><b>Crie uma meta de economia</b><span className="muted small"> · reserva, viagem, carro…</span></span>
+                  <Icon name="right" /></Link>
+              )}
 
-          <section className="card">
-            <div className="card-title">
-              <h3>Últimos lançamentos</h3>
-              <Link to="/lancamentos" className="link">Ver todos</Link>
+              <section className="card o-8">
+                <div className="card-title"><h3>Para onde foi o dinheiro</h3></div>
+                {view.slices.length ? (
+                  <>
+                    <Donut data={view.slices} total={view.spent} label="Gastos" />
+                    <SliceList
+                      data={view.slices} total={view.spent} budgets={view.budgets}
+                      onPick={(s) => nav(`/lancamentos?cat=${s.id}&from=${from}&to=${to}`)}
+                    />
+                  </>
+                ) : <p className="empty">Nenhum gasto neste período. Toque no <b>+</b> para lançar.</p>}
+              </section>
+
+              {view.highlights.length > 0 && (
+                <section className="card o-4">
+                  <div className="card-title"><h3>Destaques do mês</h3><Link to="/relatorios" className="link">Relatórios</Link></div>
+                  <p className="muted small">Comparado com {view.prevLabel.toLowerCase()}</p>
+                  <ul className="insights">{view.highlights.map((h) => (
+                    <li key={h} className={/subiu|novo gasto/.test(h) ? 'up' : 'down'}>{h}</li>
+                  ))}</ul>
+                </section>
+              )}
+
+              {!space.role && !hideReminderCard && (reminders.state === 'prompt' || reminders.state === 'denied') && (
+                <section className="card reminder-card o-5">
+                  <div className="card-title"><h3>🔔 Ative os lembretes</h3>
+                    <button className="link muted" onClick={() => {
+                      setHideReminderCard(true)
+                      try { localStorage.setItem('fv-reminder-card', 'hidden') } catch { /* sem armazenamento */ }
+                    }}>Agora não</button>
+                  </div>
+                  <p className="muted small">Avisamos 2 dias antes, no dia e se alguma conta vencer, mesmo com o app fechado.</p>
+                  {reminders.state === 'prompt'
+                    ? <button className="btn primary block" onClick={reminders.ask}>Permitir notificações</button>
+                    : <PermissionHelp state="denied" />}
+                </section>
+              )}
+
             </div>
-            {view.month.length
-              ? view.month.filter((t) => amt(t) > 0 || t.paid).slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)
-              : <p className="empty">Nada por aqui ainda.</p>}
-          </section>
+          </div>
         </>
       )}
       {contribGoal && <ContributionSheet goal={contribGoal} onClose={() => setContribGoal(null)} />}

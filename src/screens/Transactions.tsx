@@ -58,7 +58,7 @@ export function Transactions() {
   const activeFilters = [kind !== 'all', status !== 'all', cat, pm].filter(Boolean).length
 
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top"><h1>Lançamentos</h1></header>
       <PeriodPicker value={p} onChange={setP} />
 

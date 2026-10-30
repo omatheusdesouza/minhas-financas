@@ -18,7 +18,7 @@ export function Bills() {
   const [params] = useSearchParams()
   const [tab, setTab] = useState<Tab>(() => (['pagar', 'parcelas', 'fixas'].includes(params.get('tab') ?? '') ? params.get('tab') as Tab : 'pagar'))
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top"><h1>Contas</h1></header>
       <Segmented value={tab} onChange={setTab} options={[
         { value: 'pagar', label: 'A pagar' },

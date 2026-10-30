@@ -38,51 +38,54 @@ export function Settings() {
     <div className="screen">
       <header className="top"><BackLink /><h1>Ajustes</h1><span /></header>
 
-      <Link to="/ajustes/perfil" className="card account-card">
-        <div className="account">
-          <MyAvatar size={56} />
-          <div className="grow">
-            <strong className="account-name">{profile?.display_name}</strong>
-            <p className="muted small">{user.email}</p>
-            <p className="muted small">
-              {api.mode === 'cloud' ? '☁️ Dados salvos na nuvem com segurança' : '📱 Modo demonstração — dados só neste aparelho'}
-            </p>
+      <div className="settings-grid">
+        <Link to="/ajustes/perfil" className="card account-card">
+          <div className="account">
+            <MyAvatar size={56} />
+            <div className="grow">
+              <strong className="account-name">{profile?.display_name}</strong>
+              <p className="muted small">{user.email}</p>
+              <p className="muted small">
+                {api.mode === 'cloud' ? '☁️ Dados salvos na nuvem com segurança' : '📱 Modo demonstração — dados só neste aparelho'}
+              </p>
+            </div>
+            <Icon name="right" className="muted" />
           </div>
-          <Icon name="right" className="muted" />
-        </div>
-      </Link>
+        </Link>
 
-      <section className="card">
-        <div className="card-title"><h3>Aparência</h3></div>
-        <Segmented value={theme} onChange={(v) => { setThemeState(v); setTheme(v) }} options={[
-          { value: 'auto', label: 'Automático' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' },
-        ]} />
-        <p className="muted small">No automático, o Fynvault segue o tema do celular.</p>
-      </section>
+        <section className="card">
+          <div className="card-title"><h3>Aparência</h3></div>
+          <Segmented value={theme} onChange={(v) => { setThemeState(v); setTheme(v) }} options={[
+            { value: 'auto', label: 'Automático' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' },
+          ]} />
+          <p className="muted small">No automático, o Fynvault segue o tema do celular.</p>
+        </section>
 
-      <SyncSettings />
+        <SyncSettings />
 
-      <ReminderSettings />
+        <ReminderSettings />
 
-      <SecuritySettings />
+        <SecuritySettings />
 
-      <nav className="card flush menu">
-        <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
-        <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
-        <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
-        <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento <Icon name="right" className="end" /></Link>
-        <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
-        {api.mode === 'cloud' && <button onClick={() => setPwOpen(true)}><Icon name="user" /> Trocar senha <Icon name="right" className="end" /></button>}
-        <button className="danger-text" onClick={async () => {
-          const pending = sync?.pending ?? 0
-          const msg = pending
-            ? `Atenção: ${pending} alteração(ões) ainda não foram enviadas para a nuvem e serão perdidas se você sair agora. Conecte-se à internet e toque em "Sincronizar agora" antes. Sair mesmo assim?`
-            : 'Sair da sua conta? Os dados ficam salvos na nuvem; a cópia deste celular e o bloqueio por PIN são removidos.'
-          if (!confirm(msg)) return
-          await lock.clear()
-          await api.signOut()
-        }}><Icon name="logout" /> Sair</button>
-      </nav>
+        <nav className="card flush menu">
+          <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
+          <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
+          <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
+          <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento <Icon name="right" className="end" /></Link>
+          <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
+          {api.mode === 'cloud' && <button onClick={() => setPwOpen(true)}><Icon name="user" /> Trocar senha <Icon name="right" className="end" /></button>}
+          <button className="danger-text" onClick={async () => {
+            const pending = sync?.pending ?? 0
+            const msg = pending
+              ? `Atenção: ${pending} alteração(ões) ainda não foram enviadas para a nuvem e serão perdidas se você sair agora. Conecte-se à internet e toque em "Sincronizar agora" antes. Sair mesmo assim?`
+              : 'Sair da sua conta? Os dados ficam salvos na nuvem; a cópia deste celular e o bloqueio por PIN são removidos.'
+            if (!confirm(msg)) return
+            await lock.clear()
+            await api.signOut()
+          }}><Icon name="logout" /> Sair</button>
+        </nav>
+
+      </div>
 
       <p className="muted small center">Fynvault · Personal finance · versão 1.1</p>
       {pwOpen && <PasswordSheet onClose={() => setPwOpen(false)} />}
@@ -91,7 +94,7 @@ export function Settings() {
 }
 
 function BackLink() {
-  return <Link to="/" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link>
+  return <Link to="/" className="icon-btn back-home" aria-label="Voltar"><Icon name="left" /></Link>
 }
 
 function PasswordSheet({ onClose }: { onClose: () => void }) {
@@ -160,7 +163,7 @@ export function CategoriesScreen() {
   )
 
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Categorias</h1><span /></header>
       <Segmented value={kind} onChange={setKind} options={[{ value: 'expense', label: 'Gastos' }, { value: 'income', label: 'Ganhos' }]} />
       {space.role && <p className="note small">Categorias das finanças de {space.name}.</p>}
@@ -294,7 +297,7 @@ export function PaymentMethodsScreen() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Formas de pagamento</h1><span /></header>
       {canEdit && <button className="btn primary block" onClick={() => { setEditing({}); setName('') }}><Icon name="plus" /> Nova forma de pagamento</button>}
       <p className="muted small">Ex.: Cartão Nubank, Cartão Itaú, Pix, Dinheiro, Promissória da loja X…</p>
@@ -347,7 +350,7 @@ export function ProfileScreen() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top"><button className="icon-btn" aria-label="Voltar" onClick={cancel}><Icon name="left" /></button><h1>Meu perfil</h1><span /></header>
       <section className="card"><ProfileForm value={draft} onChange={setDraft} showErrors={showErrors} /></section>
       <button className="btn primary block" onClick={save}>Salvar</button>

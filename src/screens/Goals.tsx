@@ -44,7 +44,7 @@ export function GoalsScreen() {
 
   return (
     <div className="screen">
-      <header className="top"><Link to="/" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Metas</h1><span /></header>
+      <header className="top"><Link to="/" className="icon-btn back-home" aria-label="Voltar"><Icon name="left" /></Link><h1>Metas</h1><span /></header>
       {active.length > 0 && (
         <section className="card hero goals-hero">
           <p className="hero-label">Total guardado</p>
@@ -55,28 +55,30 @@ export function GoalsScreen() {
       )}
       {canEdit && <button className="btn primary block" onClick={() => setEditing({ icon: '🎯', archived: false })}><Icon name="plus" /> Nova meta</button>}
       {list.length === 0 && <p className="empty">Crie uma meta: reserva de emergência, viagem, carro novo… e acompanhe quanto falta.</p>}
-      {list.map((g) => {
-        const p = data.progress.get(g.id)!
-        return (
-          <button key={g.id} className={`card goal-card ${g.archived ? 'dim' : ''}`} onClick={() => nav(`/metas/${g.id}`)}>
-            <div className="goal-top">
-              <span className="goal-icon">{g.icon}</span>
-              <div className="grow">
-                <span className="stat-label">{g.name}{g.archived ? ' · arquivada' : ''}</span>
-                <strong>{money(p.saved)} <span className="muted small">de {money(g.target_amount)}</span></strong>
+      <div className="goal-grid">
+        {list.map((g) => {
+          const p = data.progress.get(g.id)!
+          return (
+            <button key={g.id} className={`card goal-card ${g.archived ? 'dim' : ''}`} onClick={() => nav(`/metas/${g.id}`)}>
+              <div className="goal-top">
+                <span className="goal-icon">{g.icon}</span>
+                <div className="grow">
+                  <span className="stat-label">{g.name}{g.archived ? ' · arquivada' : ''}</span>
+                  <strong>{money(p.saved)} <span className="muted small">de {money(g.target_amount)}</span></strong>
+                </div>
+                <span className="goal-pct">{pct(p.pct)}</span>
               </div>
-              <span className="goal-pct">{pct(p.pct)}</span>
-            </div>
-            <span className="bar gold"><span style={{ width: `${p.pct * 100}%` }} /></span>
-            <div className="goal-foot">
-              <Status p={p} goal={g} />
-              <span className="muted small">
-                {p.done ? '' : p.projected ? `Previsão: ${fmt.month(p.projected)}` : `Faltam ${money(p.remaining)}`}
-              </span>
-            </div>
-          </button>
-        )
-      })}
+              <span className="bar gold"><span style={{ width: `${p.pct * 100}%` }} /></span>
+              <div className="goal-foot">
+                <Status p={p} goal={g} />
+                <span className="muted small">
+                  {p.done ? '' : p.projected ? `Previsão: ${fmt.month(p.projected)}` : `Faltam ${money(p.remaining)}`}
+                </span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
       {data.goals.some((g) => g.archived) && <Toggle checked={showArchived} onChange={setShowArchived} label="Mostrar arquivadas" />}
       {editing && <GoalEditor goal={editing} onClose={() => setEditing(null)} />}
     </div>
@@ -98,7 +100,7 @@ export function GoalDetailScreen() {
   const chart = p.history.map((h) => ({ label: monthLabel(h.month), total: h.total }))
 
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top"><Link to="/metas" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>{goal.icon} {goal.name}</h1>
         {canEdit ? <button className="icon-btn" aria-label="Editar meta" onClick={() => setEditing(true)}><Icon name="edit" /></button> : <span />}</header>
 

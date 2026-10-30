@@ -165,7 +165,7 @@ export function Reports() {
 
       {!r ? <div className="skeleton tall" /> : (
         <>
-          <section className="kpis">
+          <section className="kpis kpis-4">
             <div className="card kpi"><span className="muted small">Ganhos</span><strong className="pos">{money(r.income)}</strong>{delta(r.income, r.pIncome, true)}</div>
             <div className="card kpi"><span className="muted small">Gastos</span><strong className="neg">{money(r.expense)}</strong>{delta(r.expense, r.pExpense, false)}</div>
             <div className="card kpi"><span className="muted small">Saldo</span><strong className={r.income - r.expense < 0 ? 'neg' : ''}>{money(r.income - r.expense)}</strong>
@@ -174,128 +174,130 @@ export function Reports() {
               {r.pending > 0 && <span className="muted small">{money(r.pending)} pendente</span>}</div>
           </section>
           <p className="muted small center">Setas comparam com o período anterior ({periodLabel(p.preset, prev)}).</p>
+          <div className="report-grid">
 
-          <section className="card">
-            <div className="card-title">
-              <h3>{drill ? <button className="link" onClick={() => setDrill(null)}>← {drill.icon} {drill.name}</button> : 'Por categoria'}</h3>
-            </div>
-            {!drill && <Segmented value={kind} onChange={(k) => { setKind(k); setDrill(null) }} options={[
-              { value: 'expense', label: 'Gastos' }, { value: 'income', label: 'Ganhos' },
-            ]} />}
-            {(drill ? r.sub! : r.slices).length ? (
-              <>
-                <Donut data={drill ? r.sub! : r.slices} total={drill ? drill.total : kind === 'expense' ? r.expense : r.income} label={drill ? drill.name : kind === 'expense' ? 'Gastos' : 'Ganhos'} />
-                <SliceList
-                  data={drill ? r.sub! : r.slices}
-                  total={drill ? drill.total : kind === 'expense' ? r.expense : r.income}
-                  onPick={drill ? undefined : (s) => s.id !== 'none' && idx.children(s.id, true).length > 0 && setDrill(s)}
-                />
-                {!drill && r.slices.some((s) => idx.children(s.id, true).length > 0) && (
-                  <p className="muted small">Toque numa categoria para ver as subcategorias.</p>
-                )}
-              </>
-            ) : <p className="empty">Sem lançamentos neste período.</p>}
-          </section>
-
-          <section className="card">
-            <div className="card-title"><h3>Comparado com {periodLabel(p.preset, prev).toLowerCase()}</h3></div>
-            {r.highlights.length ? (
-              <ul className="insights">{r.highlights.map((h) => (
-                <li key={h} className={/subiu|novo gasto/.test(h) ? 'up' : 'down'}>{h}</li>
-              ))}</ul>
-            ) : <p className="empty">Sem mudanças relevantes nos gastos.</p>}
-            {r.changes.length > 0 && (
-              <details className="rules-box">
-                <summary>Ver todas as variações ({r.changes.length})</summary>
-                {r.changes.map((c) => (
-                  <div key={c.key} className="change-row">
-                    <span>{c.icon} {c.label}</span>
-                    <span className={c.delta > 0 ? 'neg' : 'pos'}>{c.delta > 0 ? '+' : ''}{money(c.delta)}{c.pct != null && ` (${c.delta > 0 ? '+' : ''}${Math.round(c.pct * 100)}%)`}</span>
-                    <span className="muted small">{money(c.previous)} → {money(c.current)}</span>
-                  </div>
-                ))}
-              </details>
-            )}
-          </section>
-
-          {r.natures.length > 0 && (
             <section className="card">
-              <div className="card-title"><h3>Essencial × supérfluo</h3></div>
-              <div className="stack-bar">
-                {r.natures.map((n) => <span key={n.id} style={{ width: `${(n.total / r.expense) * 100}%`, background: n.color }} title={n.name} />)}
+              <div className="card-title">
+                <h3>{drill ? <button className="link" onClick={() => setDrill(null)}>← {drill.icon} {drill.name}</button> : 'Por categoria'}</h3>
               </div>
-              <SliceList data={r.natures} total={r.expense} />
+              {!drill && <Segmented value={kind} onChange={(k) => { setKind(k); setDrill(null) }} options={[
+                { value: 'expense', label: 'Gastos' }, { value: 'income', label: 'Ganhos' },
+              ]} />}
+              {(drill ? r.sub! : r.slices).length ? (
+                <>
+                  <Donut data={drill ? r.sub! : r.slices} total={drill ? drill.total : kind === 'expense' ? r.expense : r.income} label={drill ? drill.name : kind === 'expense' ? 'Gastos' : 'Ganhos'} />
+                  <SliceList
+                    data={drill ? r.sub! : r.slices}
+                    total={drill ? drill.total : kind === 'expense' ? r.expense : r.income}
+                    onPick={drill ? undefined : (s) => s.id !== 'none' && idx.children(s.id, true).length > 0 && setDrill(s)}
+                  />
+                  {!drill && r.slices.some((s) => idx.children(s.id, true).length > 0) && (
+                    <p className="muted small">Toque numa categoria para ver as subcategorias.</p>
+                  )}
+                </>
+              ) : <p className="empty">Sem lançamentos neste período.</p>}
             </section>
-          )}
 
-          <section className="card">
-            <div className="card-title"><h3>Evolução</h3></div>
-            <div className="chart">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={r.series} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--line)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={12} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} width={56}
-                    tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v))} />
-                  <Tooltip formatter={(v: number) => money(v)} cursor={{ fill: 'var(--line)', opacity: 0.4 }}
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--text)' }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Ganhos" fill="var(--good)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                  <Bar dataKey="Gastos" fill="var(--bad)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-title"><h3>Últimos 6 meses</h3></div>
-            <div className="chart">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={r.sixSeries} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--line)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} width={56}
-                    tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v))} />
-                  <Tooltip formatter={(v: number) => money(v)} cursor={{ fill: 'var(--line)', opacity: 0.4 }}
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--text)' }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Ganhos" fill="var(--good)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                  <Bar dataKey="Gastos" fill="var(--bad)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
-
-          {r.byPm.size > 0 && (
             <section className="card">
-              <div className="card-title"><h3>Gastos por forma de pagamento</h3></div>
-              <ul className="kv">
-                {[...r.byPm.entries()].sort((a, b) => b[1] - a[1]).map(([n, v]) => (
-                  <li key={n}><span>{n}</span><span>{money(v)} <span className="muted small">({pct(v / (r.expense || 1))})</span></span></li>
-                ))}
-              </ul>
+              <div className="card-title"><h3>Comparado com {periodLabel(p.preset, prev).toLowerCase()}</h3></div>
+              {r.highlights.length ? (
+                <ul className="insights">{r.highlights.map((h) => (
+                  <li key={h} className={/subiu|novo gasto/.test(h) ? 'up' : 'down'}>{h}</li>
+                ))}</ul>
+              ) : <p className="empty">Sem mudanças relevantes nos gastos.</p>}
+              {r.changes.length > 0 && (
+                <details className="rules-box">
+                  <summary>Ver todas as variações ({r.changes.length})</summary>
+                  {r.changes.map((c) => (
+                    <div key={c.key} className="change-row">
+                      <span>{c.icon} {c.label}</span>
+                      <span className={c.delta > 0 ? 'neg' : 'pos'}>{c.delta > 0 ? '+' : ''}{money(c.delta)}{c.pct != null && ` (${c.delta > 0 ? '+' : ''}${Math.round(c.pct * 100)}%)`}</span>
+                      <span className="muted small">{money(c.previous)} → {money(c.current)}</span>
+                    </div>
+                  ))}
+                </details>
+              )}
             </section>
-          )}
 
-          {r.top.length > 0 && (
+            {r.natures.length > 0 && (
+              <section className="card">
+                <div className="card-title"><h3>Essencial × supérfluo</h3></div>
+                <div className="stack-bar">
+                  {r.natures.map((n) => <span key={n.id} style={{ width: `${(n.total / r.expense) * 100}%`, background: n.color }} title={n.name} />)}
+                </div>
+                <SliceList data={r.natures} total={r.expense} />
+              </section>
+            )}
+
             <section className="card">
-              <div className="card-title"><h3>Maiores gastos</h3></div>
-              {r.top.map((t) => <TxRow key={t.id} t={t} showDate />)}
+              <div className="card-title"><h3>Evolução</h3></div>
+              <div className="chart">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={r.series} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+                    <CartesianGrid vertical={false} stroke="var(--line)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={12} />
+                    <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} width={56}
+                      tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v))} />
+                    <Tooltip formatter={(v: number) => money(v)} cursor={{ fill: 'var(--line)', opacity: 0.4 }}
+                      contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--text)' }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="Ganhos" fill="var(--good)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="Gastos" fill="var(--bad)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </section>
-          )}
 
-          <section className="card">
-            <div className="card-title"><h3>Exportar relatório</h3></div>
-            <div className="btn-col">
-              <button className="btn ghost" disabled={!!exporting} onClick={() => exportFile('pdf')}>
-                <Icon name="download" size={18} /> {exporting === 'pdf' ? 'Gerando PDF…' : 'Relatório em PDF'}
-              </button>
-              <button className="btn ghost" disabled={!!exporting} onClick={() => exportFile('xlsx')}>
-                <Icon name="download" size={18} /> {exporting === 'xlsx' ? 'Gerando planilha…' : 'Planilha Excel (.xlsx)'}
-              </button>
-              <button className="btn ghost" onClick={shareSummary}><Icon name="share" size={18} /> Compartilhar resumo (WhatsApp, e-mail…)</button>
-            </div>
-          </section>
+            <section className="card">
+              <div className="card-title"><h3>Últimos 6 meses</h3></div>
+              <div className="chart">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={r.sixSeries} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+                    <CartesianGrid vertical={false} stroke="var(--line)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }} tickLine={false} axisLine={false} width={56}
+                      tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v))} />
+                    <Tooltip formatter={(v: number) => money(v)} cursor={{ fill: 'var(--line)', opacity: 0.4 }}
+                      contentStyle={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--text)' }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="Ganhos" fill="var(--good)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="Gastos" fill="var(--bad)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+
+            {r.byPm.size > 0 && (
+              <section className="card">
+                <div className="card-title"><h3>Gastos por forma de pagamento</h3></div>
+                <ul className="kv">
+                  {[...r.byPm.entries()].sort((a, b) => b[1] - a[1]).map(([n, v]) => (
+                    <li key={n}><span>{n}</span><span>{money(v)} <span className="muted small">({pct(v / (r.expense || 1))})</span></span></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {r.top.length > 0 && (
+              <section className="card">
+                <div className="card-title"><h3>Maiores gastos</h3></div>
+                {r.top.map((t) => <TxRow key={t.id} t={t} showDate />)}
+              </section>
+            )}
+
+            <section className="card">
+              <div className="card-title"><h3>Exportar relatório</h3></div>
+              <div className="btn-col">
+                <button className="btn ghost" disabled={!!exporting} onClick={() => exportFile('pdf')}>
+                  <Icon name="download" size={18} /> {exporting === 'pdf' ? 'Gerando PDF…' : 'Relatório em PDF'}
+                </button>
+                <button className="btn ghost" disabled={!!exporting} onClick={() => exportFile('xlsx')}>
+                  <Icon name="download" size={18} /> {exporting === 'xlsx' ? 'Gerando planilha…' : 'Planilha Excel (.xlsx)'}
+                </button>
+                <button className="btn ghost" onClick={shareSummary}><Icon name="share" size={18} /> Compartilhar resumo (WhatsApp, e-mail…)</button>
+              </div>
+            </section>
+          </div>
         </>
       )}
     </div>

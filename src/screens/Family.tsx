@@ -39,7 +39,7 @@ export function FamilyScreen() {
 
   if (!fam || !fam.available()) {
     return (
-      <div className="screen">
+      <div className="screen narrow">
         <header className="top">{back}<h1>Família</h1><span /></header>
         <p className="note">
           {!fam
@@ -66,7 +66,7 @@ export function FamilyScreen() {
   const shared = spaces.filter((s) => s.role)
 
   return (
-    <div className="screen">
+    <div className="screen narrow">
       <header className="top">{back}<h1>Família</h1><span /></header>
       <p className="muted small">
         Compartilhe suas finanças com quem mora com você. A pessoa vê suas contas no app dela, como um espaço separado,
