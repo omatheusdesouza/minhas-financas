@@ -17,6 +17,7 @@
 | **Primeiro acesso** | Onboarding: perfil (nome e foto/emoji), rendas fixas, gastos fixos (com modelos prontos; fixos ou variáveis) e meta de economia. |
 | **Lembretes** | Notificações no celular, mesmo com o app fechado: informar valor das contas variáveis (diário, de 10 a 3 dias antes), alerta crítico 2 dias antes, aviso no dia, alerta diário de conta vencida até pagar e lembrete mensal do aporte na meta. Horário configurável. |
 | **Offline** | Funciona **sem internet**: tudo fica numa cópia no celular e é enviado sozinho quando a conexão volta, **sem duplicar**. Em dois aparelhos, vale a edição mais recente e exclusões chegam no outro. Comprovantes e foto do perfil pedem internet. |
+| **Família** | Compartilhe suas finanças com outra pessoa por um **código de convite**. Ela vê suas contas como um espaço separado no app dela, com permissão **pode editar** ou **só visualizar**; você muda ou remove quando quiser, e os dados pessoais dela continuam só dela. |
 | **Segurança** | Bloqueio do app por **PIN** (4 ou 6 números) e **digital / Face ID**, pedido ao abrir e ao voltar (imediatamente, após 1 ou 5 minutos). O PIN fica só no celular, no armazenamento seguro do sistema, como hash. |
 | **Ajustes** | Perfil, lembretes, segurança, aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
 
@@ -119,6 +120,9 @@ npx cap open android    # abre no Android Studio
   `src/lib/sync.ts` envia em ordem e busca o que mudou (`updated_at`) e o que foi apagado (`deleted_rows`, migration
   0003). Ids são criados no aparelho (reenviar não duplica); contas do mês têm id fixo. O banco ignora edições mais
   antigas que a já salva (`client_updated_at`). Sem a migration 0003, o app avisa e não sincroniza.
+- **Modo família:** migration 0004 (`family_members`, `family_invites`, função `can_access`). As regras de segurança
+  permitem ler o espaço de quem compartilhou e alterar só com papel de editor. No app, a camada de dados filtra
+  pelo espaço aberto e o motor de sincronização baixa/apaga espaços quando o compartilhamento começa/termina.
 - **Lembretes:** `src/lib/reminders.ts` calcula a agenda (testável, sem depender do celular) e `src/lib/notify.ts`
   agenda as notificações locais. A agenda inteira é recalculada a cada mudança e ao voltar para o app (no máximo 60
   lembretes nos próximos 30 dias, por causa do limite de 64 do iPhone). Canais Android: `fv-lembretes` e `fv-alertas`.
