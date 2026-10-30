@@ -8,7 +8,8 @@ import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
 import { PermissionHelp, useReminderPermission } from '../components/Reminders'
 import { TxRow } from '../components/TxRow'
 import { api } from '../lib/api'
-import { addDays, today } from '../lib/dates'
+import { addDays, fmt, previousPeriod, today } from '../lib/dates'
+import { compareSpending, insights } from '../lib/compare'
 import { money, pct } from '../lib/format'
 import { computeHealth } from '../lib/health'
 import { byCategory, sumBy } from '../lib/services'
@@ -28,20 +29,22 @@ export function Home() {
   const { from, to } = p.period
 
   const { data } = useLoad(async () => {
-    const [month, unpaid, plans, recurring, goals, contributions] = await Promise.all([
+    const prev = previousPeriod('mes', { from, to })
+    const [month, unpaid, plans, recurring, goals, contributions, before] = await Promise.all([
       api.listTransactions(from, to),
       api.listUnpaid(addDays(today(), 30)),
       api.listPlanTransactions(),
       api.listRecurring(),
       api.listGoals(),
       api.listContributions(),
+      api.listTransactions(prev.from, prev.to),
     ])
-    return { month, unpaid, plans, recurring, goals, contributions }
+    return { month, unpaid, plans, recurring, goals, contributions, before, prevFrom: prev.from }
   }, [from, to])
 
   const view = useMemo(() => {
     if (!data) return null
-    const { month, unpaid, plans, recurring, goals, contributions } = data
+    const { month, unpaid, plans, recurring, goals, contributions, before, prevFrom } = data
     const active = recurring.filter((r) => r.active)
     const estimate = new Map(active.map((r) => [r.id, r.amount ?? 0]))
     // Previsto: contas variáveis ainda sem valor entram pela estimativa da conta fixa
@@ -58,7 +61,9 @@ export function Home() {
     const variableNoEstimate = fixedBills.filter((r) => r.amount_type === 'variable' && r.amount == null).length
     const hasVariable = fixedBills.some((r) => r.amount_type === 'variable')
 
-    const goal = goals.find((g) => !g.archived) ?? null
+    const activeGoals = goals.filter((g) => !g.archived)
+    const goal = activeGoals[0] ?? null
+    const highlights = insights(compareSpending(month, before, idx), 3)
     const saved = goal ? contributions.filter((c) => c.goal_id === goal.id).reduce((s, c) => s + c.amount, 0) : 0
 
     const overdue = unpaid.filter((t) => t.date < today())
@@ -69,7 +74,7 @@ export function Home() {
     const health = computeHealth({ month, overdue, futureInstallments: plans, idx })
     return {
       month, income, expense, realized, pendingAmounts, fixedIncome, fixedExpense, variableNoEstimate, hasVariable,
-      goal, saved, upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
+      goal, saved, otherGoals: activeGoals.length - 1, highlights, prevLabel: fmt.month(prevFrom), upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
     }
   }, [data, idx])
 
@@ -121,7 +126,7 @@ export function Home() {
           </section>
 
           {view.goal ? (
-            <button className="card goal-card" onClick={() => setContribGoal(view.goal)}>
+            <div className="card goal-card" role="link" tabIndex={0} onClick={() => nav('/metas')}>
               <div className="goal-top">
                 <span className="goal-icon">{view.goal.icon}</span>
                 <div className="grow">
@@ -131,13 +136,32 @@ export function Home() {
                 <span className="goal-pct">{pct(Math.min(1, view.saved / view.goal.target_amount))}</span>
               </div>
               <span className="bar gold"><span style={{ width: `${Math.min(100, (view.saved / view.goal.target_amount) * 100)}%` }} /></span>
-              <span className="muted small">
-                {view.saved >= view.goal.target_amount ? 'Meta alcançada! 🎉'
-                  : view.goal.monthly_contribution ? `Aporte de ${money(view.goal.monthly_contribution)}/mês · toque para registrar`
-                    : 'Toque para registrar um aporte'}
-              </span>
-            </button>
-          ) : null}
+              <div className="goal-foot">
+                <span className="muted small">
+                  {view.saved >= view.goal.target_amount ? 'Meta alcançada! 🎉'
+                    : view.goal.monthly_contribution ? `Aporte de ${money(view.goal.monthly_contribution)}/mês` : 'Ver detalhes'}
+                  {view.otherGoals > 0 && ` · +${view.otherGoals} meta(s)`}
+                </span>
+                {view.saved < view.goal.target_amount && (
+                  <button className="btn ghost sm-btn gold-btn" onClick={(e) => { e.stopPropagation(); setContribGoal(view.goal) }}>Aportar</button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Link to="/metas" className="card goal-empty"><span className="goal-icon">🎯</span>
+              <span className="grow"><b>Crie uma meta de economia</b><span className="muted small"> · reserva, viagem, carro…</span></span>
+              <Icon name="right" /></Link>
+          )}
+
+          {view.highlights.length > 0 && (
+            <section className="card">
+              <div className="card-title"><h3>Destaques do mês</h3><Link to="/relatorios" className="link">Relatórios</Link></div>
+              <p className="muted small">Comparado com {view.prevLabel.toLowerCase()}</p>
+              <ul className="insights">{view.highlights.map((h) => (
+                <li key={h} className={/subiu|novo gasto/.test(h) ? 'up' : 'down'}>{h}</li>
+              ))}</ul>
+            </section>
+          )}
 
           {!hideReminderCard && (reminders.state === 'prompt' || reminders.state === 'denied') && (
             <section className="card reminder-card">

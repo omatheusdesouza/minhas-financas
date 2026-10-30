@@ -9,6 +9,7 @@ import { initNotifications, syncReminders } from './lib/notify'
 import type { User } from './lib/backend'
 import { Auth } from './screens/Auth'
 import { Bills } from './screens/Bills'
+import { GoalDetailScreen, GoalsScreen } from './screens/Goals'
 import { Home } from './screens/Home'
 import { Onboarding } from './screens/Onboarding'
 import { Reports } from './screens/Reports'
@@ -73,6 +74,8 @@ function Shell() {
           <Route path="/ajustes/categorias" element={<CategoriesScreen />} />
           <Route path="/ajustes/pagamentos" element={<PaymentMethodsScreen />} />
           <Route path="/ajustes/perfil" element={<ProfileScreen />} />
+          <Route path="/metas" element={<GoalsScreen />} />
+          <Route path="/metas/:id" element={<GoalDetailScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

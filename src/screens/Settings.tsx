@@ -59,6 +59,7 @@ export function Settings() {
       <ReminderSettings />
 
       <nav className="card flush menu">
+        <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
         <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
         <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento <Icon name="right" className="end" /></Link>
         <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
