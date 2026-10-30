@@ -4,6 +4,7 @@ import { CATEGORY_COLORS, CATEGORY_ICONS, LEGACY_COLOR_MAP } from '../lib/defaul
 import { MyAvatar } from '../components/Avatar'
 import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
 import { ProfileForm, draftFrom, nameError, saveProfileDraft } from '../components/ProfileForm'
+import { PrivacySettings } from '../components/PrivacySettings'
 import { ReminderSettings } from '../components/Reminders'
 import { SecuritySettings } from '../components/SecuritySettings'
 import { SyncSettings } from '../components/SyncBadge'
@@ -11,28 +12,16 @@ import { useLock } from '../lockContext'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
-import { saveFile } from '../lib/exporter'
 import { moneyInput, parseMoney, money } from '../lib/format'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
 import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
 import { useApp } from '../store'
 
 export function Settings() {
-  const { user, run, profile, sync } = useApp()
+  const { user, profile, sync } = useApp()
   const lock = useLock()
   const [pwOpen, setPwOpen] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme())
-
-  async function backup() {
-    await run(async () => {
-      const [categories, payment_methods, transactions, installment_plans, recurring_bills] = await Promise.all([
-        api.listCategories(), api.listPaymentMethods(), api.listTransactions('1900-01-01', '2999-12-31'),
-        api.listPlans(), api.listRecurring(),
-      ])
-      const data = { exported_at: new Date().toISOString(), categories, payment_methods, transactions, installment_plans, recurring_bills }
-      await saveFile(`backup_fynvault_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json')
-    })
-  }
 
   return (
     <div className="screen">
@@ -67,12 +56,13 @@ export function Settings() {
 
         <SecuritySettings />
 
+        <PrivacySettings />
+
         <nav className="card flush menu">
           <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento <Icon name="right" className="end" /></Link>
-          <button onClick={backup}><Icon name="download" /> Fazer backup (arquivo JSON) <Icon name="right" className="end" /></button>
           {api.mode === 'cloud' && <button onClick={() => setPwOpen(true)}><Icon name="user" /> Trocar senha <Icon name="right" className="end" /></button>}
           <button className="danger-text" onClick={async () => {
             const pending = sync?.pending ?? 0
