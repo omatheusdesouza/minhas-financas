@@ -69,3 +69,10 @@ O usuário enviou uma especificação completa (ver `03-prompts-importantes.md`)
 ## 4. Última etapa
 
 Criação desta pasta `docs/historico/` para levar o histórico a outro lugar.
+
+## 5. Versão web (30/10/2026)
+
+O app passou a rodar também no navegador como app instalável (PWA), publicado no GitHub Pages
+(`https://omatheusdesouza.github.io/minhas-financas/`) pelo workflow `web.yml`. No iPhone é instalado pelo
+Safari (Adicionar à Tela de Início), já que o iOS não instala APK. Site URL do Supabase apontada para o site.
+Testado pelo usuário no iPhone. Na web não há lembretes com o app fechado nem biometria; o PIN funciona.
