@@ -24,6 +24,8 @@ const jobs = [
   // Web
   { out: 'public/brand/apple-touch-icon.png', w: 180, h: 180, img: 'icon.svg', fill: true },
   { out: 'public/brand/icon-192.png', w: 192, h: 192, img: 'icon.svg', fill: true },
+  { out: 'public/brand/icon-512.png', w: 512, h: 512, img: 'icon.svg', fill: true },
+  { out: 'public/brand/icon-maskable-512.png', w: 512, h: 512, bg: OFF_BG, img: 'icon-foreground.svg', fill: true },
 ]
 
 ;(async () => {
