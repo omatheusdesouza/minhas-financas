@@ -1,6 +1,6 @@
 # 04 — Estado atual (30/10/2026)
 
-Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0005 aplicadas**.
+Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0005 aplicadas**; **0006 (reservas) criada, falta aplicar**.
 
 ## Pronto
 
@@ -24,8 +24,9 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | Modo família com convite e permissões | Pronto |
 | RLS em todas as tabelas, buckets privados, sem segredos no repositório | Pronto |
 | Layout para computador (menu lateral, colunas, atalhos de teclado) | Pronto |
+| Reservas (adicionar, retirar, ajustar, enviar parte do salário; relatório "Enviado para reservas") | Pronto (falta rodar a migration 0006) |
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
-| README atualizado, 67 testes automáticos, CI gerando APK | Pronto |
+| README atualizado, 71 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
 ## Parcial / não verificado

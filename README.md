@@ -13,6 +13,7 @@
 | **Lançamentos** | Histórico completo com busca e filtros por período, tipo, categoria, forma de pagamento e situação (pago/pendente). |
 | **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
 | **Relatórios** | **Semana, quinzena, mês, ano ou qualquer período**: destaques comparados ao período anterior ("sua conta de luz subiu 18%"), gastos por categoria e subcategoria, essencial × supérfluo, evolução, últimos 6 meses, formas de pagamento e maiores gastos. Exporta **PDF** com a marca Fynvault, **planilha Excel (.xlsx)** ou **resumo para WhatsApp**. |
+| **Reservas** | Dinheiro guardado (reserva de emergência, caixinha…): você informa quanto já tem e usa os botões **Adicionar** e **Retirar**; histórico de entradas e retiradas editável e **ajuste de saldo**. Ao lançar ou receber um ganho (salário), dá para **enviar parte para uma reserva**. O saldo das reservas fica separado de ganhos e gastos; o mês mostra "Enviado para reservas" e quanto ficou **livre**. |
 | **Metas** | Metas de economia com progresso, previsão de quando você chega lá, quanto guardar por mês para cumprir o prazo, gráfico da evolução e histórico de aportes. |
 | **Primeiro acesso** | Onboarding: perfil (nome e foto/emoji), rendas fixas, gastos fixos (com modelos prontos; fixos ou variáveis) e meta de economia. |
 | **Lembretes** | Notificações no celular, mesmo com o app fechado: informar valor das contas variáveis (diário, de 10 a 3 dias antes), alerta crítico 2 dias antes, aviso no dia, alerta diário de conta vencida até pagar e lembrete mensal do aporte na meta. Horário configurável. |
@@ -93,7 +94,7 @@ Como usar:
 
 No computador (janela com 1024 px ou mais) o layout muda: **menu lateral**, Início em duas colunas, Relatórios,
 Metas e Ajustes em grade, realce ao passar o mouse e **atalhos de teclado**: `N` novo lançamento, `/` buscar,
-`1` a `6` trocar de tela, `Esc` fechar e `?` ver todos os atalhos.
+`1` a `7` trocar de tela, `Esc` fechar e `?` ver todos os atalhos.
 
 Na versão web o app também abre sem internet e se atualiza sozinho. O que muda em relação ao APK:
 
@@ -164,6 +165,9 @@ npx cap open android    # abre no Android Studio
 - **LGPD:** textos em `src/lib/legal.ts` (trocar `LEGAL_VERSION` pede novo aceite; o aceite fica em `user_metadata`).
   A exclusão de conta apaga os arquivos pela API do Storage e chama `delete_my_account` (migration 0005), que apaga
   só a conta de quem está logado; as tabelas vão junto por `on delete cascade`.
+- **Reservas:** são linhas de `savings_goals` sem valor-alvo; entradas e retiradas ficam em `goal_contributions` (negativo =
+  retirada; `kind` = `initial`/`adjust` não conta como dinheiro do mês). Regras em `src/lib/reserves.ts` (testadas). Precisa da
+  migration 0006; sem ela o app mostra um aviso (consulta `app_schema_version()`).
 - **Lembretes:** `src/lib/reminders.ts` calcula a agenda (testável, sem depender do celular) e `src/lib/notify.ts`
   agenda as notificações locais. A agenda inteira é recalculada a cada mudança e ao voltar para o app (no máximo 60
   lembretes nos próximos 30 dias, por causa do limite de 64 do iPhone). Canais Android: `fv-lembretes` e `fv-alertas`.
