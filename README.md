@@ -90,6 +90,10 @@ Como usar:
   a App Store.)
 - **Android:** use o `Fynvault.apk` (seção 2) ou também pode adicionar o site à tela inicial.
 
+No computador (janela com 1024 px ou mais) o layout muda: **menu lateral**, Início em duas colunas, Relatórios,
+Metas e Ajustes em grade, realce ao passar o mouse e **atalhos de teclado**: `N` novo lançamento, `/` buscar,
+`1` a `6` trocar de tela, `Esc` fechar e `?` ver todos os atalhos.
+
 Na versão web o app também abre sem internet e se atualiza sozinho. O que muda em relação ao APK:
 
 | Recurso | Na web |
@@ -144,7 +148,8 @@ npx cap open android    # abre no Android Studio
 - **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 6. Gráficos com Recharts.
 - **Versão web (PWA):** `vite-plugin-pwa` gera o manifesto e o service worker (app guardado no aparelho, atualização
   automática). O service worker só é registrado fora do app nativo (`src/main.tsx`). O workflow `web.yml` publica
-  `dist/` no GitHub Pages; o `android.yml` continua gerando o APK.
+  `dist/` no GitHub Pages; o `android.yml` continua gerando o APK. Layout de computador: regras `@media (min-width: 1024px)`
+  em `src/styles.css`, menu em `src/components/Sidebar.tsx` e atalhos em `src/lib/shortcuts.ts` (testados).
 - **Dados:** Supabase (PostgreSQL + login). Cada tabela tem *Row Level Security*: cada usuário só acessa os próprios dados.
 - **Modo demonstração:** sem as variáveis do Supabase, o app salva tudo no aparelho, útil para testar.
 - **Offline e sincronização:** as telas leem e gravam numa cópia local (`src/lib/tables.ts`, IndexedDB) com as regras

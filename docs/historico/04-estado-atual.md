@@ -23,7 +23,8 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | Offline + sincronização sem duplicar | Pronto |
 | Modo família com convite e permissões | Pronto |
 | RLS em todas as tabelas, buckets privados, sem segredos no repositório | Pronto |
-| README atualizado, 65 testes automáticos, CI gerando APK | Pronto |
+| Layout para computador (menu lateral, colunas, atalhos de teclado) | Pronto |
+| README atualizado, 67 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
 ## Parcial / não verificado
