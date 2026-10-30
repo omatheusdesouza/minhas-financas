@@ -18,7 +18,7 @@
       <stop offset="1" stop-color="#071E2C"/>
     </linearGradient>
   </defs>
-  <g transform="translate(160.00,149.33) scale(2.1333)" filter="url(#fv-shadow)">
+  <g transform="translate(75.52,62.29) scale(2.6453)" filter="url(#fv-shadow)">
   <g class="fv-shield">
     <path fill="url(#fv-navy)" d="M100 50 L180 50 Q230 50 230 100 L230 180 Q230 250 165 290 Q100 250 100 180 Z"/>
     <path fill="none" stroke="url(#fv-gold-line)" stroke-width="1.6" stroke-linejoin="round" d="M124 70 L206 70 Q212 70 212 76 L212 180 Q212 234 165 266 Q118 234 118 180 L118 76 Q118 70 124 70 Z"/>

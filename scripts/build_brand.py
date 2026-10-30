@@ -134,7 +134,7 @@ def icon_svg(variant, dark=False):
 '''
 
 
-def foreground_svg(variant, scale_pct=0.50):
+def foreground_svg(variant, scale_pct=0.62):
     """Camada da frente do ícone adaptativo do Android (fundo transparente, zona segura)."""
     s = 1024 * scale_pct / 240
     tx = 512 - 165 * s
