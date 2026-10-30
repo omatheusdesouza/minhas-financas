@@ -38,5 +38,7 @@ export default defineConfig({
   ],
   // Caminhos relativos para funcionar dentro do app nativo (Capacitor) e no GitHub Pages
   base: './',
+  // Data da montagem, mostrada em Ajustes para saber qual versão está aberta
+  define: { __APP_BUILD__: JSON.stringify(new Date().toISOString()) },
   build: { chunkSizeWarningLimit: 1200 },
 })

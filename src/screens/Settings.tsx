@@ -87,7 +87,7 @@ export function Settings() {
 
       </div>
 
-      <p className="muted small center">Fynvault · Personal finance · versão 1.1</p>
+      <p className="muted small center">Fynvault · Personal finance · versão 1.1 · {new Date(__APP_BUILD__).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</p>
       {pwOpen && <PasswordSheet onClose={() => setPwOpen(false)} />}
     </div>
   )

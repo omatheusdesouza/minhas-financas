@@ -23,7 +23,15 @@ if (Capacitor.isNativePlatform()) {
   })
 } else {
   // Versão web: guarda o app no aparelho (abre sem internet) e atualiza sozinho quando há versão nova
-  import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }))
+  import('virtual:pwa-register').then(({ registerSW }) => registerSW({
+    immediate: true,
+    // Procura versão nova ao voltar para a aba e a cada hora (não só ao abrir)
+    onRegisteredSW(_url, reg) {
+      if (!reg) return
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}) })
+      setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000)
+    },
+  }))
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
