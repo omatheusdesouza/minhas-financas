@@ -1,28 +1,32 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ContributionSheet } from '../components/ContributionSheet'
 import { Field, MoneyInput, Toggle } from '../components/Fields'
 import { Icon } from '../components/Icon'
+import { MovementSheet } from '../components/ReserveSheets'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
 import { addMonths, fmt, today } from '../lib/dates'
 import { money, moneyInput, parseMoney, pct } from '../lib/format'
 import { goalProgress, monthLabel, type GoalProgress } from '../lib/goals'
+import { reservesAvailable } from '../lib/features'
+import { isGoal, type Goal } from '../lib/reserves'
 import { parseDay } from '../lib/templates'
-import type { SavingsGoal } from '../lib/types'
+import type { GoalContribution, SavingsGoal } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 const GOAL_ICONS = ['🎯', '🛟', '✈️', '🚗', '🏠', '🎓', '💍', '👶', '🏖️', '💻', '📱', '🏥', '🐷', '📈', '🎁', '⭐']
 
 function useGoals() {
   return useLoad(async () => {
-    const [goals, contributions] = await Promise.all([api.listGoals(), api.listContributions()])
+    const [all, contributions] = await Promise.all([api.listGoals(), api.listContributions()])
+    // reservas (sem valor-alvo) têm tela própria
+    const goals: Goal[] = all.filter(isGoal)
     return { goals, contributions, progress: new Map(goals.map((g) => [g.id, goalProgress(g, contributions, today())])) }
   }, [])
 }
 
-function Status({ p, goal }: { p: GoalProgress; goal: SavingsGoal }) {
+function Status({ p, goal }: { p: GoalProgress; goal: Goal }) {
   if (p.done) return <span className="chip good">Meta alcançada 🎉</span>
   if (p.onTrack === true) return <span className="chip good">No ritmo do prazo</span>
   if (p.onTrack === false) return <span className="chip warn">Abaixo do ritmo</span>
@@ -88,10 +92,12 @@ export function GoalsScreen() {
 export function GoalDetailScreen() {
   const { id } = useParams()
   const { data } = useGoals()
-  const { run, canEdit } = useApp()
+  const { canEdit } = useApp()
   const nav = useNavigate()
-  const [contrib, setContrib] = useState(false)
+  const [movement, setMovement] = useState<{ kind: 'in' | 'out'; item?: GoalContribution } | null>(null)
   const [editing, setEditing] = useState(false)
+  // retiradas (valor negativo) só com a migration 0006
+  const { data: canWithdraw } = useLoad(reservesAvailable, [])
   if (!data) return <div className="screen"><div className="skeleton tall" /></div>
   const goal = data.goals.find((g) => g.id === id)
   if (!goal) return <div className="screen"><p className="empty">Meta não encontrada.</p><Link className="link center" to="/metas">Voltar</Link></div>
@@ -125,7 +131,12 @@ export function GoalDetailScreen() {
           {goal.target_date && <li><span>Prazo</span><span>{fmt.day(goal.target_date)}</span></li>}
           {!p.done && p.neededPerMonth != null && <li><span>Para cumprir o prazo</span><span>{money(p.neededPerMonth)}/mês</span></li>}
         </ul>
-        {canEdit && !goal.archived && <button className="btn primary block" onClick={() => setContrib(true)}><Icon name="plus" /> Registrar aporte</button>}
+        {canEdit && !goal.archived && (
+          <div className="move-btns">
+            <button className="btn primary" onClick={() => setMovement({ kind: 'in' })}><Icon name="plus" /> Registrar aporte</button>
+            {canWithdraw && <button className="btn ghost" disabled={p.saved <= 0} onClick={() => setMovement({ kind: 'out' })}><Icon name="minus" /> Retirar</button>}
+          </div>
+        )}
       </section>
 
       <section className="card">
@@ -154,22 +165,33 @@ export function GoalDetailScreen() {
       </section>
 
       <section className="card">
-        <div className="card-title"><h3>Histórico de aportes</h3><span className="muted small">{list.length}</span></div>
+        <div className="card-title"><h3>Histórico</h3><span className="muted small">{list.length}</span></div>
         {list.length ? (
-          <ul className="kv">
-            {list.map((c) => (
-              <li key={c.id}>
-                <span>{fmt.day(c.date)}{c.note ? <span className="muted small"> · {c.note}</span> : null}</span>
-                <span>{money(c.amount)} {canEdit && <button className="link danger-text small" onClick={() =>
-                  confirm('Excluir este aporte?') && run(() => api.deleteContribution(c.id), 'Aporte excluído')}>excluir</button>}</span>
-              </li>
-            ))}
-          </ul>
+          <MovementList items={list} canEdit={canEdit} onEdit={(c) => setMovement({ kind: c.amount < 0 ? 'out' : 'in', item: c })} />
         ) : <p className="empty">Nenhum aporte ainda.</p>}
       </section>
 
-      {contrib && <ContributionSheet goal={goal} onClose={() => setContrib(false)} />}
+      {movement && <MovementSheet goal={goal} kind={movement.kind} movement={movement.item} balance={p.saved} onClose={() => setMovement(null)} />}
       {editing && <GoalEditor goal={goal} onClose={() => setEditing(false)} onDeleted={() => nav('/metas')} />}
+    </div>
+  )
+}
+
+/** Entradas e saídas (mais recentes primeiro); toque para editar ou excluir. */
+export function MovementList({ items, canEdit, onEdit }: { items: GoalContribution[]; canEdit: boolean; onEdit: (c: GoalContribution) => void }) {
+  return (
+    <div className="moves">
+      {items.map((c) => (
+        <button key={c.id} className="move-row" disabled={!canEdit} onClick={() => onEdit(c)}>
+          <span className={`move-sign ${c.amount < 0 ? 'neg' : 'pos'}`}>{c.amount < 0 ? '−' : '+'}</span>
+          <span className="grow">
+            <span className="move-title">{c.note || (c.amount < 0 ? 'Retirada' : 'Entrada')}</span>
+            <span className="muted small">{fmt.day(c.date)}</span>
+          </span>
+          <b className={c.amount < 0 ? 'neg' : 'pos'}>{c.amount < 0 ? '− ' : '+ '}{money(Math.abs(c.amount))}</b>
+          {canEdit && <Icon name="edit" size={16} className="muted" />}
+        </button>
+      ))}
     </div>
   )
 }

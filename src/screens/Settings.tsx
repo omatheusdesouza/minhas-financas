@@ -59,6 +59,7 @@ export function Settings() {
         <PrivacySettings />
 
         <nav className="card flush menu">
+          <Link to="/reservas"><span className="menu-emoji">🛟</span> Reservas <Icon name="right" className="end" /></Link>
           <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>

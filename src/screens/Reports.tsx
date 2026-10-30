@@ -9,6 +9,7 @@ import { api } from '../lib/api'
 import { compareSpending, insights } from '../lib/compare'
 import { addDays, addMonths, diffDays, endOfMonth, fmt, periodLabel, previousPeriod, startOfMonth } from '../lib/dates'
 import { saveFile, shareText } from '../lib/exporter'
+import { isReserve, reserveFlow } from '../lib/reserves'
 import { reportFileName, type ReportData } from '../lib/report'
 import { money, pct } from '../lib/format'
 import { byCategory, sumBy, type Slice } from '../lib/services'
@@ -28,12 +29,15 @@ export function Reports() {
 
   const { data } = useLoad(async () => {
     const sixFrom = startOfMonth(addMonths(p.period.to, -5))
-    const [cur, before, six] = await Promise.all([
+    const [cur, before, six, goals, contributions] = await Promise.all([
       api.listTransactions(p.period.from, p.period.to),
       api.listTransactions(prev.from, prev.to),
       api.listTransactions(sixFrom, endOfMonth(p.period.to)),
+      api.listGoals(),
+      api.listContributions(),
     ])
-    return { cur, before, six, sixFrom }
+    const reserves = reserveFlow(goals.filter(isReserve), contributions, p.period.from, p.period.to)
+    return { cur, before, six, sixFrom, reserves }
   }, [p.period.from, p.period.to])
 
   const r = useMemo(() => {
@@ -84,7 +88,7 @@ export function Reports() {
       const inMonth = six.filter((t) => t.date.slice(0, 7) === m.slice(0, 7))
       return { label: fmt.month(m).slice(0, 3) + '/' + m.slice(2, 4), Ganhos: sumBy(inMonth, 'income'), Gastos: sumBy(inMonth, 'expense') }
     })
-    return { cur, income, expense, pIncome, pExpense, days, slices, sub, natures, byPm, series, top, pending, changes, highlights, sixSeries }
+    return { cur, income, expense, pIncome, pExpense, days, slices, sub, natures, byPm, series, top, pending, changes, highlights, sixSeries, reserves: data.reserves }
   }, [data, idx, kind, drill, p.period, paymentMethods])
 
   const label = periodLabel(p.preset, p.period)
@@ -96,7 +100,7 @@ export function Reports() {
       userName: profile?.display_name ?? '', generatedAt: new Date(),
       kpis: {
         income: r.income, expense: r.expense, balance: r.income - r.expense, avgDay: r.expense / r.days,
-        pending: r.pending, prevIncome: r.pIncome, prevExpense: r.pExpense,
+        pending: r.pending, prevIncome: r.pIncome, prevExpense: r.pExpense, reserves: r.reserves,
       },
       expenseByCategory: byCategory(r.cur, idx, 'expense'),
       incomeByCategory: byCategory(r.cur, idx, 'income'),
@@ -142,6 +146,10 @@ export function Reports() {
       `Ganhos: ${money(r.income)}`,
       `Gastos: ${money(r.expense)}`,
       `Saldo: ${money(r.income - r.expense)}`,
+      ...(r.reserves.sent || r.reserves.withdrawn
+        ? [`Enviado para reservas: ${money(r.reserves.sent)}${r.reserves.withdrawn ? ` (retirado ${money(r.reserves.withdrawn)})` : ''}`,
+            `Livre após reservas: ${money(r.income - r.expense - r.reserves.net)}`]
+        : []),
       '',
       'Maiores gastos por categoria:',
       ...byCategory(r.cur, idx, 'expense').slice(0, 8).map((s) => `• ${s.icon} ${s.name}: ${money(s.total)} (${pct(s.total / (r.expense || 1))})`),
@@ -173,6 +181,14 @@ export function Reports() {
             <div className="card kpi"><span className="muted small">Gasto médio/dia</span><strong>{money(r.expense / r.days)}</strong>
               {r.pending > 0 && <span className="muted small">{money(r.pending)} pendente</span>}</div>
           </section>
+          {(r.reserves.sent > 0 || r.reserves.withdrawn > 0) && (
+            <section className="card reserve-flow">
+              <div><span className="muted small">🛟 Enviado para reservas</span><strong>{money(r.reserves.sent)}</strong></div>
+              <div><span className="muted small">Retirado das reservas</span><strong>{money(r.reserves.withdrawn)}</strong></div>
+              <div><span className="muted small">Livre após reservas</span>
+                <strong className={r.income - r.expense - r.reserves.net < 0 ? 'neg' : ''}>{money(r.income - r.expense - r.reserves.net)}</strong></div>
+            </section>
+          )}
           <p className="muted small center">Setas comparam com o período anterior ({periodLabel(p.preset, prev)}).</p>
           <div className="report-grid">
 

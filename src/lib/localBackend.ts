@@ -56,6 +56,10 @@ export function createLocalBackend(): Backend {
       setSigned(true)
       return { needsConfirmation: false }
     },
+    // o modo demonstração guarda tudo no aparelho e aceita qualquer recurso
+    async schemaVersion() {
+      return '9999'
+    },
     async acceptTerms(version) {
       saveTerms(version)
       listeners.forEach((cb) => cb(demoUser(), 'USER_UPDATED'))

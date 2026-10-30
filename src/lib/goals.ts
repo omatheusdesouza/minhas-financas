@@ -22,8 +22,9 @@ export interface GoalProgress {
 export function goalProgress(goal: SavingsGoal, contributions: GoalContribution[], today: string): GoalProgress {
   const list = contributions.filter((c) => c.goal_id === goal.id).sort((a, b) => (a.date < b.date ? -1 : 1))
   const saved = round(list.reduce((s, c) => s + c.amount, 0))
-  const remaining = round(Math.max(0, goal.target_amount - saved))
-  const done = remaining === 0
+  const target = goal.target_amount ?? 0
+  const remaining = round(Math.max(0, target - saved))
+  const done = target > 0 && remaining === 0
   const monthly = goal.monthly_contribution ?? 0
   const monthsToGo = done ? 0 : monthly > 0 ? Math.ceil(remaining / monthly) : null
   const projected = monthsToGo == null ? null : addMonths(today, monthsToGo)
@@ -52,7 +53,7 @@ export function goalProgress(goal: SavingsGoal, contributions: GoalContribution[
       m = next
     }
   }
-  return { saved, remaining, pct: Math.min(1, saved / goal.target_amount), done, monthsToGo, projected, neededPerMonth, onTrack, history }
+  return { saved, remaining, pct: target > 0 ? Math.min(1, Math.max(0, saved / target)) : 0, done, monthsToGo, projected, neededPerMonth, onTrack, history }
 }
 
 export const monthLabel = (m: string) => {

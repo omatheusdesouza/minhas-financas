@@ -18,6 +18,7 @@ import { GoalDetailScreen, GoalsScreen } from './screens/Goals'
 import { Home } from './screens/Home'
 import { Onboarding } from './screens/Onboarding'
 import { Reports } from './screens/Reports'
+import { ReserveDetailScreen, ReservesScreen } from './screens/Reserves'
 import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from './screens/Settings'
 import { Transactions } from './screens/Transactions'
 import { LockProvider } from './lockContext'
@@ -117,6 +118,8 @@ function Shell() {
           <Route path="/ajustes/familia" element={<FamilyScreen />} />
           <Route path="/metas" element={<GoalsScreen />} />
           <Route path="/metas/:id" element={<GoalDetailScreen />} />
+          <Route path="/reservas" element={<ReservesScreen />} />
+          <Route path="/reservas/:id" element={<ReserveDetailScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

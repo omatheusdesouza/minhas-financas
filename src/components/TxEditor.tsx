@@ -9,6 +9,7 @@ import type { AmountType, Kind, Transaction } from '../lib/types'
 import { useApp, type EditorMode } from '../store'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from './Fields'
 import { Icon } from './Icon'
+import { ReserveSplit, emptySplit, sendToReserve, splitError, type SplitValue } from './ReserveSheets'
 import { Sheet } from './Sheet'
 
 type Mode = EditorMode
@@ -36,6 +37,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
   const [receipt, setReceipt] = useState<string | null>(initial?.receipt_path ?? null)
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [split, setSplit] = useState<SplitValue>(emptySplit)
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -47,7 +49,10 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
   const n = Math.max(1, Math.min(120, parseInt(count) || 1))
   // Sem valor só é permitido em conta variável (todo mês) ou lançamento ainda não pago
   const amountOk = value > 0 || (!amount.trim() && ((mode === 'recurring' && amountType === 'variable') || (editing && !paid)))
-  const valid = amountOk && (description.trim() || categoryId)
+  // Ganho recebido agora (ex.: salário): pode mandar uma parte direto para uma reserva
+  const canSplit = kind === 'income' && mode === 'single' && paid && !initial?.paid && value > 0
+  const splitErr = canSplit ? splitError(split, value) : null
+  const valid = amountOk && (description.trim() || categoryId) && !splitErr
 
   function changeKind(k: Kind) {
     setKind(k)
@@ -90,6 +95,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         // comprovante removido ou trocado: apaga o arquivo antigo
         const old = initial?.receipt_path
         if (old && old !== receipt) await api.removeFile('receipts', old).catch(() => {})
+        if (canSplit) await sendToReserve(split, date, desc)
       }
       return true
     }, editing ? 'Lançamento atualizado' : mode === 'installments' ? `${n} parcelas criadas` : 'Lançamento salvo')
@@ -223,6 +229,9 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
           label={mode === 'installments' ? '1ª parcela já paga' : paidLabel}
         />
       )}
+
+      {canSplit && <ReserveSplit value={split} onChange={setSplit} total={value} />}
+      {canSplit && split.on && splitErr && <p className="bad-text small">{splitErr}</p>}
 
       <Field label="Observações">
         <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional" />

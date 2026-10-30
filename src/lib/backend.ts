@@ -25,6 +25,8 @@ export interface Backend {
   acceptTerms(version: string): Promise<void>
   /** Apaga a conta, todos os dados e arquivos (LGPD, art. 18, VI). Precisa de internet no modo nuvem. */
   deleteAccount(): Promise<void>
+  /** Última migration aplicada no banco (null se não der para saber). */
+  schemaVersion(): Promise<string | null>
   resetPassword(email: string): Promise<void>
   /** Confirma o código de 6 dígitos enviado por e-mail e entra na conta. */
   verifyRecovery(email: string, code: string): Promise<void>

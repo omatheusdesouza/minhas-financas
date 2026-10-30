@@ -63,6 +63,11 @@ export async function buildXlsx(d: ReportData): Promise<Blob> {
   kpi('Saldo', k.balance, k.prevIncome - k.prevExpense)
   kpi('Gasto médio por dia', k.avgDay, null)
   kpi('Pendente de pagamento', k.pending, null)
+  if (k.reserves && (k.reserves.sent || k.reserves.withdrawn)) {
+    kpi('Enviado para reservas', k.reserves.sent, null)
+    kpi('Retirado das reservas', k.reserves.withdrawn, null)
+    kpi('Livre após reservas', k.balance - k.reserves.net, null)
+  }
 
   if (d.highlights.length) {
     rs.addRow([])

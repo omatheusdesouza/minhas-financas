@@ -5,7 +5,8 @@ export const NAV_ITEMS = [
   { key: '3', to: '/contas', label: 'Contas', icon: 'bills' },
   { key: '4', to: '/relatorios', label: 'Relatórios', icon: 'chart' },
   { key: '5', to: '/metas', label: 'Metas', icon: 'target' },
-  { key: '6', to: '/ajustes', label: 'Ajustes', icon: 'gear' },
+  { key: '6', to: '/reservas', label: 'Reservas', icon: 'safe' },
+  { key: '7', to: '/ajustes', label: 'Ajustes', icon: 'gear' },
 ] as const
 
 export type ShortcutAction =

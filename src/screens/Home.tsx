@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MyAvatar } from '../components/Avatar'
 import { Donut, ScoreRing, SliceList } from '../components/Charts'
-import { ContributionSheet } from '../components/ContributionSheet'
+import { MovementSheet } from '../components/ReserveSheets'
+import { ReservesCard } from './Reserves'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
 import { PermissionHelp, useReminderPermission } from '../components/Reminders'
@@ -14,8 +15,9 @@ import { addDays, fmt, previousPeriod, today } from '../lib/dates'
 import { compareSpending, insights } from '../lib/compare'
 import { money, pct } from '../lib/format'
 import { computeHealth } from '../lib/health'
+import { isGoal, isReserve, reserveFlow, type Goal } from '../lib/reserves'
 import { byCategory, sumBy } from '../lib/services'
-import { amt, type SavingsGoal, type Transaction } from '../lib/types'
+import { amt, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 export function Home() {
@@ -24,7 +26,7 @@ export function Home() {
   const [p, setP] = useState(initialPeriod('mes'))
   // No computador o detalhe da saúde financeira já abre expandido
   const [showHealth, setShowHealth] = useState(() => window.matchMedia?.('(min-width: 1024px)').matches ?? false)
-  const [contribGoal, setContribGoal] = useState<SavingsGoal | null>(null)
+  const [contribGoal, setContribGoal] = useState<Goal | null>(null)
   const reminders = useReminderPermission()
   const [hideReminderCard, setHideReminderCard] = useState(() => {
     try { return localStorage.getItem('fv-reminder-card') === 'hidden' } catch { return false }
@@ -64,11 +66,12 @@ export function Home() {
     const variableNoEstimate = fixedBills.filter((r) => r.amount_type === 'variable' && r.amount == null).length
     const hasVariable = fixedBills.some((r) => r.amount_type === 'variable')
 
-    const activeGoals = goals.filter((g) => !g.archived)
+    const activeGoals = goals.filter((g) => !g.archived).filter(isGoal)
     const goal = activeGoals[0] ?? null
     const highlights = insights(compareSpending(month, before, idx), 3)
     const saved = goal ? contributions.filter((c) => c.goal_id === goal.id).reduce((s, c) => s + c.amount, 0) : 0
 
+    const reserves = reserveFlow(goals.filter(isReserve), contributions, from, to)
     const overdue = unpaid.filter((t) => t.date < today())
     const upcoming = unpaid.filter((t) => t.kind === 'expense').sort((a, b) => (a.date < b.date ? -1 : 1))
     const slices = byCategory(month, idx, 'expense')
@@ -77,9 +80,9 @@ export function Home() {
     const health = computeHealth({ month, overdue, futureInstallments: plans, idx })
     return {
       month, income, expense, realized, pendingAmounts, fixedIncome, fixedExpense, variableNoEstimate, hasVariable,
-      goal, saved, otherGoals: activeGoals.length - 1, highlights, prevLabel: fmt.month(prevFrom), upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
+      reserves, goal, saved, otherGoals: activeGoals.length - 1, highlights, prevLabel: fmt.month(prevFrom), upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
     }
-  }, [data, idx])
+  }, [data, idx, from, to])
 
   const hour = new Date().getHours()
   const hello = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
@@ -119,6 +122,10 @@ export function Home() {
                 <div className="hero-foot muted small">
                   <span>Já realizado: <b>{money(view.realized)}</b></span>
                   {view.pendingAmounts > 0 && <span>{view.pendingAmounts} conta(s) com valor estimado</span>}
+                  {(view.reserves.sent > 0 || view.reserves.withdrawn > 0) && <>
+                    <span>Para reservas: <b>{money(view.reserves.net)}</b></span>
+                    <span>Livre: <b>{money(view.income - view.expense - view.reserves.net)}</b></span>
+                  </>}
                 </div>
               </section>
 
@@ -214,9 +221,11 @@ export function Home() {
                 </div>
               ) : canEdit && (
                 <Link to="/metas" className="card goal-empty o-3"><span className="goal-icon">🎯</span>
-                  <span className="grow"><b>Crie uma meta de economia</b><span className="muted small"> · reserva, viagem, carro…</span></span>
+                  <span className="grow"><b>Crie uma meta de economia</b><span className="muted small"> · viagem, carro, casa…</span></span>
                   <Icon name="right" /></Link>
               )}
+
+              <ReservesCard className="o-3" />
 
               <section className="card o-8">
                 <div className="card-title"><h3>Para onde foi o dinheiro</h3></div>
@@ -260,7 +269,7 @@ export function Home() {
           </div>
         </>
       )}
-      {contribGoal && <ContributionSheet goal={contribGoal} onClose={() => setContribGoal(null)} />}
+      {contribGoal && <MovementSheet goal={contribGoal} kind="in" balance={view?.saved ?? 0} onClose={() => setContribGoal(null)} />}
     </div>
   )
 }

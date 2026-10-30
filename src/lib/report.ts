@@ -17,6 +17,8 @@ export interface ReportData {
     pending: number
     prevIncome: number
     prevExpense: number
+    /** dinheiro enviado e retirado das reservas no período (fora de ganhos e gastos) */
+    reserves?: { sent: number; withdrawn: number; net: number }
   }
   expenseByCategory: Slice[]
   incomeByCategory: Slice[]

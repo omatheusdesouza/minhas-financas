@@ -92,7 +92,7 @@ export function createSupabase(url: string, key: string): SupabaseClient {
 
 export type AuthAndFiles = Pick<Backend,
   | 'getUser' | 'onAuthChange' | 'signIn' | 'signUp' | 'resetPassword' | 'verifyRecovery' | 'updatePassword' | 'signOut'
-  | 'acceptTerms' | 'deleteAccount'
+  | 'acceptTerms' | 'deleteAccount' | 'schemaVersion'
   | 'uploadFile' | 'fileUrl' | 'removeFile'>
 
 export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
@@ -161,6 +161,19 @@ export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
     },
     async signOut() {
       await sb.auth.signOut()
+    },
+
+    async schemaVersion() {
+      // guarda a última resposta para funcionar sem internet
+      const KEY = 'fv-schema-version'
+      const { data, error } = await sb.rpc('app_schema_version')
+      if (!error) {
+        try { localStorage.setItem(KEY, String(data ?? '')) } catch { /* sem armazenamento */ }
+        return (data as string | null) ?? null
+      }
+      // função ausente = banco anterior à migration 0006
+      if (error.code === 'PGRST202' || /app_schema_version|schema cache/i.test(error.message ?? '')) return '0005'
+      try { return localStorage.getItem(KEY) } catch { return null }
     },
 
     async uploadFile(bucket, name, file) {

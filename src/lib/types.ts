@@ -99,7 +99,8 @@ export interface SavingsGoal {
   name: string
   icon: string
   color: string
-  target_amount: number
+  /** null = reserva (dinheiro guardado sem valor-alvo, migration 0006) */
+  target_amount: number | null
   monthly_contribution: number | null
   contribution_day: number | null
   target_date: string | null
@@ -109,7 +110,10 @@ export interface SavingsGoal {
 export interface GoalContribution {
   id: string
   goal_id: string
+  /** positivo = entrada; negativo = retirada (migration 0006) */
   amount: number
+  /** origem (migration 0006): 'initial' e 'adjust' mudam o saldo mas não contam como dinheiro do mês */
+  kind?: 'move' | 'initial' | 'adjust'
   date: string
   note: string | null
 }

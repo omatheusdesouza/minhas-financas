@@ -60,6 +60,12 @@ export function buildPdf(d: ReportData, logo?: string): Blob {
   })
 
   let y = 76
+  if (k.reserves && (k.reserves.sent || k.reserves.withdrawn)) {
+    doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...NAVY).text(clean(
+      `Reservas: enviado ${brl(k.reserves.sent)} · retirado ${brl(k.reserves.withdrawn)} · livre após reservas ${brl(k.balance - k.reserves.net)}`,
+    ), M, 72)
+    y = 82
+  }
   const section = (title: string) => {
     if (y > 260) { doc.addPage(); y = 20 }
     doc.setFont('times', 'bold').setFontSize(13).setTextColor(...NAVY).text(title, M, y)
