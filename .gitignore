@@ -8,4 +8,4 @@ android/build/
 ios/App/Pods/
 ios/App/build/
 tsconfig.tsbuildinfo
-MinhasFinancas.zip
+*.zip

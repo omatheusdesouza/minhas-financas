@@ -1,4 +1,4 @@
--- Minhas Finanças — esquema do banco (Supabase / PostgreSQL)
+-- Fynvault — esquema do banco (Supabase / PostgreSQL)
 -- Cole este arquivo inteiro no "SQL Editor" do Supabase e clique em "Run".
 -- Cada usuário só enxerga e altera os próprios dados (Row Level Security).
 

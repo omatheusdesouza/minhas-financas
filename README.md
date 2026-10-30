@@ -1,6 +1,6 @@
-# 💰 Minhas Finanças
+# Fynvault
 
-App de finanças pessoais para **Android e iPhone**, com conta própria (e-mail e senha) e dados guardados na nuvem: se você trocar ou perder o celular, não perde nada.
+**Personal finance** · app de finanças pessoais para **Android e iPhone**, com conta própria (e-mail e senha) e dados guardados na nuvem: se você trocar ou perder o celular, não perde nada.
 
 ## O que o app faz
 
@@ -34,13 +34,13 @@ Você vai precisar de duas contas gratuitas: **Supabase** (onde ficam seus dados
 ### 1. Criar o banco de dados (Supabase) — uns 10 minutos
 
 1. Entre em **https://supabase.com**, clique em **Start your project** e crie a conta.
-2. Clique em **New project**, dê um nome (ex.: `minhas-financas`), crie uma senha forte para o banco e escolha a região **South America (São Paulo)**.
+2. Clique em **New project**, dê um nome (ex.: `fynvault`), crie uma senha forte para o banco e escolha a região **South America (São Paulo)**.
 3. Com o projeto criado, abra **SQL Editor** (menu da esquerda) › **New query**.
 4. Abra o arquivo `supabase/schema.sql` deste projeto, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
 5. **Recuperação de senha por código:** vá em **Authentication › Emails** (ou *Email Templates*) › **Reset Password** e troque o texto por:
    ```
    <h2>Recuperar senha</h2>
-   <p>Seu código para criar uma nova senha no Minhas Finanças é: <b>{{ .Token }}</b></p>
+   <p>Seu código para criar uma nova senha no Fynvault é: <b>{{ .Token }}</b></p>
    ```
 6. *(Opcional, deixa mais simples)* Em **Authentication › Sign In / Providers › Email**, desligue **Confirm email**. Assim a conta já funciona na hora, sem precisar abrir o link de confirmação.
 7. Vá em **Project Settings › API** (ou **Data API**) e anote:
@@ -49,13 +49,13 @@ Você vai precisar de duas contas gratuitas: **Supabase** (onde ficam seus dados
 
 ### 2. Gerar o app Android (GitHub) — uns 10 minutos
 
-1. Crie uma conta em **https://github.com** e um repositório **privado** novo (ex.: `minhas-financas`).
+1. Crie uma conta em **https://github.com** e um repositório **privado** novo (ex.: `fynvault`).
 2. Envie todos os arquivos deste projeto para o repositório.
 3. No repositório, vá em **Settings › Secrets and variables › Actions › New repository secret** e crie dois:
    - `VITE_SUPABASE_URL` = a Project URL do passo 1
    - `VITE_SUPABASE_ANON_KEY` = a anon public key do passo 1
 4. Vá na aba **Actions**, escolha **Gerar APK Android** › **Run workflow**. Em uns 5 minutos fica pronto.
-5. No celular Android, abra o repositório no GitHub › **Releases** › baixe **MinhasFinancas.apk** e toque nele para instalar.
+5. No celular Android, abra o repositório no GitHub › **Releases** › baixe **Fynvault.apk** e toque nele para instalar.
    O Android vai pedir para **permitir instalar apps desta fonte**. Permita (é o seu próprio app).
 6. Abra o app, toque em **Criar conta**, e pronto!
 
@@ -72,10 +72,14 @@ A Apple só permite instalar apps no iPhone por meio dela. Há dois caminhos:
 
 ## Para desenvolvedores
 
+> **Identificador do app:** `br.com.minhasfinancas.app` (nome antigo). Ele foi mantido de propósito na
+> renomeação para Fynvault: trocar o identificador faz o celular tratar como outro app e impede atualizar
+> a versão já instalada. Só mude se for publicar como app novo nas lojas.
+
 ```bash
 npm install
 cp .env.example .env    # preencha com URL e chave do Supabase
-npm run dev             # roda no navegador (sem .env abre em modo demonstração)
+npm run dev             # roda no navegador (http://localhost:5173) (sem .env abre em modo demonstração)
 npm run build && npx cap sync   # atualiza os projetos android/ e ios/
 npx cap open android    # abre no Android Studio
 ```
