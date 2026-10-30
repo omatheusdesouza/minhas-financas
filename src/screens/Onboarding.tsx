@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CategorySelect, Field, MoneyInput, Segmented } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { ProfileForm, draftFrom, nameError, saveProfileDraft, type ProfileDraft } from '../components/ProfileForm'
+import { BatteryTip, PermissionHelp, ReminderRules, useReminderPermission } from '../components/Reminders'
 import { api } from '../lib/api'
 import { addMonths, today } from '../lib/dates'
 import { money, moneyInput, parseMoney } from '../lib/format'
@@ -10,7 +11,7 @@ import { BILL_TEMPLATES, INCOME_SOURCES, incomeSourceLabel, parseDay } from '../
 import type { AmountType, IncomeSource, RecurringBill } from '../lib/types'
 import { useApp } from '../store'
 
-const STEPS = ['Perfil', 'Rendas fixas', 'Gastos fixos', 'Meta']
+const STEPS = ['Perfil', 'Rendas fixas', 'Gastos fixos', 'Lembretes', 'Meta']
 
 interface IncomeRow { key: string; id?: string; amount: string; source: IncomeSource; day: string; description: string }
 interface BillRow {
@@ -35,6 +36,8 @@ export function Onboarding() {
   const [incomes, setIncomes] = useState<IncomeRow[]>([])
   const [bills, setBills] = useState<BillRow[]>([])
   const [goal, setGoal] = useState({ name: '', target: '', monthly: '', day: '', date: '' })
+  const [hasGoal, setHasGoal] = useState(false)
+  const reminders = useReminderPermission()
 
   // Contas fixas que a pessoa já tem
   useEffect(() => {
@@ -145,9 +148,13 @@ export function Onboarding() {
         const fresh = await api.getProfile()
         await api.saveProfile({ ...fresh!, onboarding_completed_at: new Date().toISOString() })
         const goals = await api.listGoals()
-        if (goals.some((g) => !g.archived)) await finish()
-        else setStep(3)
+        setHasGoal(goals.some((g) => !g.archived))
+        setStep(3)
       })
+    } else if (step === 3) {
+      // Lembretes: segue mesmo sem permissão (dá para ativar depois em Ajustes)
+      if (hasGoal) await guard(finish)
+      else setStep(4)
     } else {
       const target = parseMoney(goal.target)
       const monthly = goal.monthly.trim() ? parseMoney(goal.monthly) : null
@@ -178,10 +185,10 @@ export function Onboarding() {
       <header className="ob-head">
         <img className="ob-logo logo-light" src="./brand/logo-horizontal.svg" alt="Fynvault" />
         <img className="ob-logo logo-dark" src="./brand/logo-horizontal-dark.svg" alt="Fynvault" />
-        <div className="ob-progress" role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step + 1}>
+        <div className="ob-progress" role="progressbar" aria-valuemin={1} aria-valuemax={5} aria-valuenow={step + 1}>
           {STEPS.map((s, i) => <span key={s} className={i <= step ? 'on' : ''} />)}
         </div>
-        <p className="muted small">Etapa {step + 1} de {STEPS.length} · {STEPS[step]}{step === 3 && ' (opcional)'}</p>
+        <p className="muted small">Etapa {step + 1} de {STEPS.length} · {STEPS[step]}{step === 4 && ' (opcional)'}</p>
       </header>
 
       <main className="ob-body">
@@ -291,6 +298,21 @@ export function Onboarding() {
 
         {step === 3 && (
           <>
+            <h1 className="ob-title">Lembretes</h1>
+            <p className="muted">O Fynvault avisa no seu celular, mesmo com o app fechado, para nenhuma conta passar do vencimento:</p>
+            <section className="card"><ReminderRules /></section>
+            {reminders.state === 'granted' ? (
+              <p className="note">✅ Lembretes ativados. Você pode mudar o horário em Ajustes › Lembretes.</p>
+            ) : reminders.state !== 'unsupported' && (
+              <button className="btn primary block" onClick={reminders.ask}>🔔 Ativar lembretes</button>
+            )}
+            <PermissionHelp state={reminders.state} />
+            <BatteryTip />
+          </>
+        )}
+
+        {step === 4 && (
+          <>
             <h1 className="ob-title">Meta de economia</h1>
             <p className="muted">Quer guardar dinheiro para algum objetivo? Reserva de emergência, viagem, carro… (opcional)</p>
             <section className="card ob-row">
@@ -317,9 +339,11 @@ export function Onboarding() {
 
       <footer className="ob-foot">
         {step > 0 && step < 3 && <button className="btn ghost" disabled={busy} onClick={() => { setShowErrors(false); setStep(step - 1) }}>Voltar</button>}
-        {step === 3 && <button className="btn ghost" disabled={busy} onClick={() => guard(finish)}>Pular</button>}
+        {step === 4 && <button className="btn ghost" disabled={busy} onClick={() => guard(finish)}>Pular</button>}
         <button className="btn primary grow" disabled={busy} onClick={next}>
-          {busy ? 'Salvando…' : step === 2 ? 'Concluir' : step === 3 ? 'Criar meta e começar' : 'Continuar'}
+          {busy ? 'Salvando…' : step === 2 ? 'Concluir'
+            : step === 3 ? (reminders.state === 'granted' || reminders.state === 'unsupported' ? 'Continuar' : 'Agora não')
+              : step === 4 ? 'Criar meta e começar' : 'Continuar'}
         </button>
       </footer>
     </div>

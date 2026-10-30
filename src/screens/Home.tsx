@@ -5,6 +5,7 @@ import { Donut, ScoreRing, SliceList } from '../components/Charts'
 import { ContributionSheet } from '../components/ContributionSheet'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
+import { PermissionHelp, useReminderPermission } from '../components/Reminders'
 import { TxRow } from '../components/TxRow'
 import { api } from '../lib/api'
 import { addDays, today } from '../lib/dates'
@@ -20,6 +21,10 @@ export function Home() {
   const [p, setP] = useState(initialPeriod('mes'))
   const [showHealth, setShowHealth] = useState(false)
   const [contribGoal, setContribGoal] = useState<SavingsGoal | null>(null)
+  const reminders = useReminderPermission()
+  const [hideReminderCard, setHideReminderCard] = useState(() => {
+    try { return localStorage.getItem('fv-reminder-card') === 'hidden' } catch { return false }
+  })
   const { from, to } = p.period
 
   const { data } = useLoad(async () => {
@@ -133,6 +138,21 @@ export function Home() {
               </span>
             </button>
           ) : null}
+
+          {!hideReminderCard && (reminders.state === 'prompt' || reminders.state === 'denied') && (
+            <section className="card reminder-card">
+              <div className="card-title"><h3>🔔 Ative os lembretes</h3>
+                <button className="link muted" onClick={() => {
+                  setHideReminderCard(true)
+                  try { localStorage.setItem('fv-reminder-card', 'hidden') } catch { /* sem armazenamento */ }
+                }}>Agora não</button>
+              </div>
+              <p className="muted small">Avisamos 2 dias antes, no dia e se alguma conta vencer, mesmo com o app fechado.</p>
+              {reminders.state === 'prompt'
+                ? <button className="btn primary block" onClick={reminders.ask}>Permitir notificações</button>
+                : <PermissionHelp state="denied" />}
+            </section>
+          )}
 
           <section className="card">
             <div className="card-title">

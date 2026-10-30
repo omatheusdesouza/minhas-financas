@@ -428,7 +428,7 @@ input:disabled { opacity: .6; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ob-head .logo-light { display: none; } :root:not([data-theme="light"]) .ob-head .logo-dark { display: block; } }
 :root[data-theme="dark"] .ob-head .logo-light { display: none; }
 :root[data-theme="dark"] .ob-head .logo-dark { display: block; }
-.ob-progress { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+.ob-progress { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; }
 .ob-progress span { height: 5px; border-radius: 99px; background: var(--line); transition: background .3s; }
 .ob-progress span.on { background: linear-gradient(90deg, #C9A257, var(--gold)); }
 .ob-head p { margin: 0; }
@@ -445,3 +445,12 @@ input:disabled { opacity: .6; }
 .choice.on { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip-btn:disabled { opacity: 1; cursor: default; }
+
+/* ---------- Fase 3B: lembretes ---------- */
+.rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.rules li { display: flex; gap: 12px; align-items: flex-start; }
+.rules li > span { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.rules p { margin: 2px 0 0; }
+.rules-box summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: 4px 0; }
+.rules-box[open] summary { margin-bottom: 10px; }
+.reminder-card { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }

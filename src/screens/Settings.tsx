@@ -4,6 +4,7 @@ import { CATEGORY_COLORS, CATEGORY_ICONS, LEGACY_COLOR_MAP } from '../lib/defaul
 import { MyAvatar } from '../components/Avatar'
 import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
 import { ProfileForm, draftFrom, nameError, saveProfileDraft } from '../components/ProfileForm'
+import { ReminderSettings } from '../components/Reminders'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
@@ -54,6 +55,8 @@ export function Settings() {
         ]} />
         <p className="muted small">No automático, o Fynvault segue o tema do celular.</p>
       </section>
+
+      <ReminderSettings />
 
       <nav className="card flush menu">
         <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>

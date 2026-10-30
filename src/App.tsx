@@ -1,9 +1,11 @@
+import { App as CapApp } from '@capacitor/app'
 import { useEffect, useState } from 'react'
-import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { PaySheet } from './components/PaySheet'
 import { TxEditor } from './components/TxEditor'
 import { api } from './lib/api'
+import { initNotifications, syncReminders } from './lib/notify'
 import type { User } from './lib/backend'
 import { Auth } from './screens/Auth'
 import { Bills } from './screens/Bills'
@@ -39,7 +41,26 @@ export function App() {
 }
 
 function Shell() {
-  const { editor, openEditor, closeEditor, payTarget, closePay } = useApp()
+  const { editor, openEditor, closeEditor, payTarget, closePay, version, bump } = useApp()
+  const navigate = useNavigate()
+
+  // Lembretes: abrir a tela certa ao tocar na notificação
+  useEffect(() => {
+    initNotifications((route) => navigate(route)).catch(() => {})
+  }, [navigate])
+
+  // Recalcula a agenda depois de qualquer mudança (pagar, editar, excluir...)
+  useEffect(() => {
+    const t = setTimeout(() => { syncReminders().catch(() => {}) }, 1200)
+    return () => clearTimeout(t)
+  }, [version])
+
+  // Ao voltar para o app: atualiza os dados (e, com eles, a agenda)
+  useEffect(() => {
+    const h = CapApp.addListener('resume', () => bump())
+    return () => { h.then((x) => x.remove()).catch(() => {}) }
+  }, [bump])
+
   return (
     <div className="app">
       <main>
