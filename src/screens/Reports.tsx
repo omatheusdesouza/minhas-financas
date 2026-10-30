@@ -10,7 +10,7 @@ import { addDays, diffDays, fmt, periodLabel, previousPeriod } from '../lib/date
 import { csv, saveFile, shareText } from '../lib/exporter'
 import { money, pct } from '../lib/format'
 import { byCategory, sumBy, type Slice } from '../lib/services'
-import type { Kind, Transaction } from '../lib/types'
+import { amt, type Kind, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 const NATURE_LABEL = { essencial: 'Essenciais', superfluo: 'Supérfluos', investimento: 'Investimentos' } as const
@@ -44,13 +44,13 @@ export function Reports() {
 
     const natures = (['essencial', 'superfluo', 'investimento'] as const).map((n) => ({
       id: n, name: NATURE_LABEL[n], icon: n === 'essencial' ? '🏠' : n === 'superfluo' ? '🍔' : '🐷', color: NATURE_COLOR[n],
-      total: cur.filter((t) => t.kind === 'expense' && idx.nature(t.category_id) === n).reduce((s, t) => s + t.amount, 0),
+      total: cur.filter((t) => t.kind === 'expense' && idx.nature(t.category_id) === n).reduce((s, t) => s + amt(t), 0),
     })).filter((x) => x.total > 0)
 
     const byPm = new Map<string, number>()
     for (const t of cur) if (t.kind === 'expense') {
       const name = paymentMethods.find((m) => m.id === t.payment_method_id)?.name ?? 'Não informado'
-      byPm.set(name, (byPm.get(name) ?? 0) + t.amount)
+      byPm.set(name, (byPm.get(name) ?? 0) + amt(t))
     }
 
     // Evolução: por dia em períodos curtos, por mês em períodos longos
@@ -63,14 +63,14 @@ export function Reports() {
     for (const t of [...cur].reverse()) {
       const key = monthly ? t.date.slice(0, 7) : t.date
       const b = buckets.get(key) ?? { label: monthly ? fmt.month(key + '-01').slice(0, 3) + '/' + key.slice(2, 4) : key, Ganhos: 0, Gastos: 0 }
-      if (t.kind === 'income') b.Ganhos += t.amount
-      else b.Gastos += t.amount
+      if (t.kind === 'income') b.Ganhos += amt(t)
+      else b.Gastos += amt(t)
       buckets.set(key, b)
     }
     const series = [...buckets.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([, v]) => v)
 
-    const top = cur.filter((t) => t.kind === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 5)
-    const pending = cur.filter((t) => !t.paid && t.kind === 'expense').reduce((s, t) => s + t.amount, 0)
+    const top = cur.filter((t) => t.kind === 'expense').sort((a, b) => amt(b) - amt(a)).slice(0, 5)
+    const pending = cur.filter((t) => !t.paid && t.kind === 'expense').reduce((s, t) => s + amt(t), 0)
     return { cur, income, expense, pIncome, pExpense, days, slices, sub, natures, byPm, series, top, pending }
   }, [data, idx, kind, drill, p.period, paymentMethods])
 
@@ -86,7 +86,7 @@ export function Reports() {
           fmt.day(t.date), t.kind === 'expense' ? 'Gasto' : 'Ganho', t.description,
           root?.name ?? 'Sem categoria', c && c.parent_id ? c.name : '',
           paymentMethods.find((m) => m.id === t.payment_method_id)?.name ?? '',
-          t.kind === 'expense' ? -t.amount : t.amount, t.paid ? 'Pago' : 'Pendente', t.notes ?? '',
+          t.kind === 'expense' ? -amt(t) : amt(t), t.paid ? 'Pago' : 'Pendente', t.notes ?? '',
         ]
       }),
     ]

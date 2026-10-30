@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { startOfMonth, today } from '../lib/dates'
 import { money, moneyInput, parseMoney } from '../lib/format'
+import { prepareUpload } from '../lib/images'
 import { splitInstallments } from '../lib/installments'
 import { generateRecurring } from '../lib/services'
-import type { Kind, Transaction } from '../lib/types'
+import type { AmountType, Kind, Transaction } from '../lib/types'
 import { useApp, type EditorMode } from '../store'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from './Fields'
+import { Icon } from './Icon'
 import { Sheet } from './Sheet'
 
 type Mode = EditorMode
@@ -30,11 +32,22 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
   const [mode, setMode] = useState<Mode>(initialMode)
   const [count, setCount] = useState('2')
   const [creditor, setCreditor] = useState('')
+  const [amountType, setAmountType] = useState<AmountType>('fixed')
+  const [receipt, setReceipt] = useState<string | null>(initial?.receipt_path ?? null)
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (receipt) api.fileUrl('receipts', receipt).then(setReceiptUrl).catch(() => setReceiptUrl(null))
+    else setReceiptUrl(null)
+  }, [receipt])
 
   const value = parseMoney(amount)
   const n = Math.max(1, Math.min(120, parseInt(count) || 1))
-  const valid = value > 0 && (description.trim() || categoryId)
+  // Sem valor só é permitido em conta variável (todo mês) ou lançamento ainda não pago
+  const amountOk = value > 0 || (!amount.trim() && ((mode === 'recurring' && amountType === 'variable') || (editing && !paid)))
+  const valid = amountOk && (description.trim() || categoryId)
 
   function changeKind(k: Kind) {
     setKind(k)
@@ -55,7 +68,8 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         })
       } else if (mode === 'recurring') {
         const bill = await api.saveRecurring({
-          description: desc, kind, amount: value, day_of_month: Number(date.slice(8)),
+          description: desc, kind, amount: value > 0 ? value : null, day_of_month: Number(date.slice(8)),
+          amount_type: kind === 'expense' ? amountType : 'fixed', income_source: null,
           category_id: categoryId, payment_method_id: paymentId, start_month: startOfMonth(date),
           end_month: null, active: true, generated_until: null, notes: notes.trim() || null,
         })
@@ -63,7 +77,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
       } else {
         await api.saveTransaction({
           ...(initial as Transaction | undefined),
-          kind, amount: value, description: desc, date, category_id: categoryId,
+          kind, amount: value > 0 ? value : null, description: desc, date, category_id: categoryId,
           payment_method_id: paymentId, paid,
           paid_at: paid ? (initial?.paid_at ?? date) : null,
           notes: notes.trim() || null,
@@ -71,7 +85,11 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
           installment_number: initial?.installment_number ?? null,
           recurring_bill_id: initial?.recurring_bill_id ?? null,
           recurring_month: initial?.recurring_month ?? null,
+          receipt_path: receipt,
         })
+        // comprovante removido ou trocado: apaga o arquivo antigo
+        const old = initial?.receipt_path
+        if (old && old !== receipt) await api.removeFile('receipts', old).catch(() => {})
       }
       return true
     }, editing ? 'Lançamento atualizado' : mode === 'installments' ? `${n} parcelas criadas` : 'Lançamento salvo')
@@ -85,7 +103,11 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
       ? 'Excluir somente esta parcela? (Para excluir a compra inteira, use a tela Contas › Parcelas.)'
       : 'Excluir este lançamento?'
     if (!confirm(msg)) return
-    const ok = await run(() => api.deleteTransaction(initial.id!).then(() => true), 'Lançamento excluído')
+    const ok = await run(async () => {
+      await api.deleteTransaction(initial.id!)
+      if (initial.receipt_path) await api.removeFile('receipts', initial.receipt_path).catch(() => {})
+      return true
+    }, 'Lançamento excluído')
     if (ok) onClose()
   }
 
@@ -121,7 +143,10 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         <p className="note">🔁 Lançamento de uma conta fixa. Para mudar todos os meses, edite em Contas › Fixas.</p>
       )}
 
-      <Field label={mode === 'installments' ? 'Valor total da compra' : 'Valor'}>
+      <Field
+        label={mode === 'installments' ? 'Valor total da compra' : mode === 'recurring' && amountType === 'variable' ? 'Valor estimado (opcional)' : 'Valor'}
+        hint={editing && !amount.trim() && !paid ? 'Conta variável: informe o valor quando a conta chegar.' : undefined}
+      >
         <MoneyInput value={amount} onChange={setAmount} autoFocus={!editing} big />
       </Field>
 
@@ -178,8 +203,16 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
           )}
         </div>
       )}
+      {mode === 'recurring' && kind === 'expense' && (
+        <Field label="O valor muda todo mês?">
+          <Segmented value={amountType} onChange={setAmountType} options={[
+            { value: 'fixed', label: 'Valor fixo' }, { value: 'variable', label: 'Variável (água, luz…)' },
+          ]} />
+        </Field>
+      )}
       {mode === 'recurring' && (
-        <p className="note">🔁 Será lançado automaticamente todo dia {Number(date.slice(8))} de cada mês, como conta a {kind === 'expense' ? 'pagar' : 'receber'}.</p>
+        <p className="note">🔁 Será lançado automaticamente todo dia {Number(date.slice(8))} de cada mês, como conta a {kind === 'expense' ? 'pagar' : 'receber'}.
+          {amountType === 'variable' && kind === 'expense' && ' Você informa o valor de cada mês quando a conta chegar.'}</p>
       )}
 
       {mode !== 'recurring' && (
@@ -192,6 +225,30 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
       <Field label="Observações">
         <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional" />
       </Field>
+
+      {mode === 'single' && (
+        <Field label="Comprovante">
+          <input ref={fileInput} type="file" accept="image/*,application/pdf" hidden onChange={async (e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (!f) return
+            const path = await run(async () => api.uploadFile('receipts', 'comprovante', await prepareUpload(f, 1800, 0.8)), 'Comprovante anexado')
+            if (path) setReceipt(path)
+          }} />
+          {receipt ? (
+            <div className="file-chip">
+              <Icon name="check" size={16} />
+              {receiptUrl ? <a href={receiptUrl} target="_blank" rel="noreferrer">Ver comprovante</a> : <span>Comprovante anexado</span>}
+              <button type="button" className="link" onClick={() => setReceipt(null)}>Remover</button>
+            </div>
+          ) : (
+            <button type="button" className="btn ghost" onClick={() => fileInput.current?.click()}>
+              <Icon name="download" size={16} /> Anexar foto ou PDF
+            </button>
+          )}
+          {receipt !== (initial?.receipt_path ?? null) && <span className="field-hint">Toque em Salvar para guardar a mudança.</span>}
+        </Field>
+      )}
     </Sheet>
   )
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
@@ -7,13 +8,15 @@ import { api } from '../lib/api'
 import { addDays, addMonths, endOfMonth, fmt, startOfMonth, today } from '../lib/dates'
 import { money, moneyInput, parseMoney } from '../lib/format'
 import { generateRecurring, propagateRecurring } from '../lib/services'
-import type { InstallmentPlan, Kind, RecurringBill, Transaction } from '../lib/types'
+import { INCOME_SOURCES, incomeSourceLabel, parseDay } from '../lib/templates'
+import { amt, type AmountType, type IncomeSource, type InstallmentPlan, type Kind, type RecurringBill, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 type Tab = 'pagar' | 'parcelas' | 'fixas'
 
 export function Bills() {
-  const [tab, setTab] = useState<Tab>('pagar')
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState<Tab>(() => (['pagar', 'parcelas', 'fixas'].includes(params.get('tab') ?? '') ? params.get('tab') as Tab : 'pagar'))
   return (
     <div className="screen">
       <header className="top"><h1>Contas</h1></header>
@@ -51,8 +54,8 @@ function Upcoming() {
   }, [data])
 
   if (!data) return <div className="skeleton tall" />
-  const totalOut = data.filter((t) => t.kind === 'expense').reduce((s, t) => s + t.amount, 0)
-  const totalIn = data.filter((t) => t.kind === 'income').reduce((s, t) => s + t.amount, 0)
+  const totalOut = data.filter((t) => t.kind === 'expense').reduce((s, t) => s + amt(t), 0)
+  const totalIn = data.filter((t) => t.kind === 'income').reduce((s, t) => s + amt(t), 0)
   return (
     <>
       <div className="totals-bar">
@@ -64,7 +67,7 @@ function Upcoming() {
         <section key={g.title} className="day-group">
           <div className={`day-head ${g.tone ?? ''}`}>
             <span>{g.title}</span>
-            <span className="muted small">{money(g.items.reduce((s, t) => s + (t.kind === 'expense' ? t.amount : -t.amount), 0))}</span>
+            <span className="muted small">{money(g.items.reduce((s, t) => s + (t.kind === 'expense' ? amt(t) : -amt(t)), 0))}</span>
           </div>
           <div className="card flush">{g.items.map((t) => <TxRow key={t.id} t={t} showDate />)}</div>
         </section>
@@ -86,7 +89,7 @@ function Plans() {
       const next = parts.find((t) => !t.paid)
       return {
         plan: p, parts, paidCount: paid.length,
-        remaining: parts.filter((t) => !t.paid).reduce((s, t) => s + t.amount, 0),
+        remaining: parts.filter((t) => !t.paid).reduce((s, t) => s + amt(t), 0),
         next,
       }
     })
@@ -204,8 +207,8 @@ function Recurring() {
   const { data } = useLoad(() => api.listRecurring(), [])
   if (!data) return <div className="skeleton tall" />
   const active = data.filter((b) => b.active)
-  const monthlyOut = active.filter((b) => b.kind === 'expense').reduce((s, b) => s + b.amount, 0)
-  const monthlyIn = active.filter((b) => b.kind === 'income').reduce((s, b) => s + b.amount, 0)
+  const monthlyOut = active.filter((b) => b.kind === 'expense').reduce((s, b) => s + (b.amount ?? 0), 0)
+  const monthlyIn = active.filter((b) => b.kind === 'income').reduce((s, b) => s + (b.amount ?? 0), 0)
 
   return (
     <>
@@ -225,9 +228,14 @@ function Recurring() {
               <span className="tx-icon" style={{ background: `${idx.root(b.category_id)?.color ?? '#94a3b8'}22` }}>{cat?.icon ?? '🔁'}</span>
               <span className="tx-text">
                 <span className="tx-desc">{b.description}</span>
-                <span className="tx-meta">Todo dia {b.day_of_month} · {idx.label(b.category_id)}{b.active ? '' : ' · pausada'}</span>
+                <span className="tx-meta">
+                  Todo dia {b.day_of_month} · {b.kind === 'income' && b.income_source ? incomeSourceLabel(b.income_source) : idx.label(b.category_id)}
+                  {b.amount_type === 'variable' ? ' · variável' : ''}{b.active ? '' : ' · pausada'}
+                </span>
               </span>
-              <span className={`tx-amount ${b.kind === 'expense' ? 'neg' : 'pos'}`}>{money(b.amount)}</span>
+              <span className={`tx-amount ${b.kind === 'expense' ? 'neg' : 'pos'}`}>
+                {b.amount == null ? <span className="muted">variável</span> : `${b.amount_type === 'variable' ? '≈ ' : ''}${money(b.amount)}`}
+              </span>
             </button>
           )
         })}
@@ -249,16 +257,22 @@ function RecurringEditor({ bill, onClose }: { bill: Partial<RecurringBill>; onCl
   const [startMonth, setStartMonth] = useState((bill.start_month ?? startOfMonth(today())).slice(0, 7))
   const [endMonth, setEndMonth] = useState(bill.end_month?.slice(0, 7) ?? '')
   const [notes, setNotes] = useState(bill.notes ?? '')
+  const [amountType, setAmountType] = useState<AmountType>(bill.amount_type ?? 'fixed')
+  const [source, setSource] = useState<IncomeSource>(bill.income_source ?? 'trabalho')
   const value = parseMoney(amount)
-  const d = Math.max(1, Math.min(31, parseInt(day) || 1))
-  const valid = value > 0 && description.trim()
+  const d = parseDay(day)
+  const variable = kind === 'expense' && amountType === 'variable'
+  const amountOk = value > 0 || (variable && !amount.trim())
+  const periodOk = !endMonth || endMonth >= startMonth
+  const valid = amountOk && d != null && periodOk && description.trim()
 
   async function save() {
     if (!valid) return
     const ok = await run(async () => {
       const saved = await api.saveRecurring({
         ...(bill as RecurringBill),
-        kind, description: description.trim(), amount: value, day_of_month: d,
+        kind, description: description.trim(), amount: value > 0 ? value : null, day_of_month: d!,
+        amount_type: kind === 'expense' ? amountType : 'fixed', income_source: kind === 'income' ? source : null,
         category_id: categoryId, payment_method_id: paymentId, active,
         start_month: `${startMonth}-01`, end_month: endMonth ? `${endMonth}-01` : null,
         generated_until: bill.generated_until ?? null, notes: notes.trim() || null,
@@ -288,10 +302,29 @@ function RecurringEditor({ bill, onClose }: { bill: Partial<RecurringBill>; onCl
         { value: 'expense', label: 'Conta a pagar', className: 'neg' }, { value: 'income', label: 'Ganho fixo', className: 'pos' },
       ]} />
       <Field label="Descrição"><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Aluguel, Luz, Salário" /></Field>
+      {kind === 'expense' ? (
+        <Field label="O valor muda todo mês?">
+          <Segmented value={amountType} onChange={setAmountType} options={[
+            { value: 'fixed', label: 'Valor fixo' }, { value: 'variable', label: 'Variável (água, luz…)' },
+          ]} />
+        </Field>
+      ) : (
+        <Field label="Origem da renda">
+          <select value={source} onChange={(e) => setSource(e.target.value as IncomeSource)}>
+            {INCOME_SOURCES.map((o) => <option key={o.value} value={o.value}>{o.icon} {o.label}</option>)}
+          </select>
+        </Field>
+      )}
       <div className="row2">
-        <Field label="Valor por mês"><MoneyInput value={amount} onChange={setAmount} /></Field>
-        <Field label="Dia do vencimento"><input type="number" inputMode="numeric" min={1} max={31} value={day} onChange={(e) => setDay(e.target.value)} /></Field>
+        <Field label={variable ? 'Valor estimado (opcional)' : 'Valor por mês'}><MoneyInput value={amount} onChange={setAmount} /></Field>
+        <Field label={kind === 'income' ? 'Dia do recebimento' : 'Dia do vencimento'}>
+          <input type="number" inputMode="numeric" min={1} max={31} value={day} onChange={(e) => setDay(e.target.value)} />
+        </Field>
       </div>
+      {d == null && <p className="bad-text small">O dia precisa ser um número de 1 a 31.</p>}
+      {d != null && d > 28 && <p className="muted small">Nos meses com menos dias, a conta vence no último dia do mês.</p>}
+      {!periodOk && <p className="bad-text small">O mês final precisa ser depois do mês inicial.</p>}
+      {variable && <p className="note">Todo mês a conta aparece em "A pagar" com <b>Informar valor</b>. Você preenche quando a conta chegar.</p>}
       <Field label="Categoria"><CategorySelect kind={kind} value={categoryId} onChange={setCategoryId} includeId={bill.category_id} /></Field>
       <Field label="Forma de pagamento"><PaymentSelect value={paymentId} onChange={setPaymentId} /></Field>
       <div className="row2">
