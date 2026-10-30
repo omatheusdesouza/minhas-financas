@@ -14,7 +14,8 @@
 | **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
 | **Relatórios** | **Semana, quinzena, mês, ano ou qualquer período**: comparação com o período anterior, gastos por categoria e subcategoria, essencial × supérfluo, evolução diária/mensal, formas de pagamento, maiores gastos. Exporta **relatório completo (PDF)**, **planilha (Excel)** ou **resumo para WhatsApp**. |
 | **Primeiro acesso** | Onboarding: perfil (nome e foto/emoji), rendas fixas, gastos fixos (com modelos prontos; fixos ou variáveis) e meta de economia. |
-| **Ajustes** | Perfil, aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
+| **Lembretes** | Notificações no celular, mesmo com o app fechado: informar valor das contas variáveis (diário, de 10 a 3 dias antes), alerta crítico 2 dias antes, aviso no dia, alerta diário de conta vencida até pagar e lembrete mensal do aporte na meta. Horário configurável. |
+| **Ajustes** | Perfil, lembretes, aparência (automático, claro ou escuro) e controle total: criar, renomear, mudar ícone/cor, reordenar, arquivar ou excluir **categorias e subcategorias**; marcar cada uma como essencial, supérfluo ou investimento; definir **limite mensal**; editar formas de pagamento; backup; trocar senha. |
 
 Categorias que já vêm prontas (todas editáveis): Casa – contas fixas, Compras para casa, Carro (combustível, conserto, seguro/IPVA…), Fast food e delivery, Shopping e roupas, Besteiras, Promissórias e parcelas, Saúde, Lazer, Educação, Investimentos, e categorias de ganhos (Salário, Renda extra, Vendas…).
 
@@ -101,6 +102,7 @@ npx @capacitor/assets generate --android --ios --iconBackgroundColor '#F2EBDD' -
 ```bash
 npm install
 cp .env.example .env    # preencha com URL e chave do Supabase
+npm test                # testes automáticos (recorrência das contas e agenda dos lembretes)
 npm run dev             # roda no navegador (http://localhost:5173) (sem .env abre em modo demonstração)
 npm run build && npx cap sync   # atualiza os projetos android/ e ios/
 npx cap open android    # abre no Android Studio
@@ -109,6 +111,9 @@ npx cap open android    # abre no Android Studio
 - **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 6. Gráficos com Recharts.
 - **Dados:** Supabase (PostgreSQL + login). Cada tabela tem *Row Level Security*: cada usuário só acessa os próprios dados.
 - **Modo demonstração:** sem as variáveis do Supabase, o app salva tudo no aparelho, útil para testar.
+- **Lembretes:** `src/lib/reminders.ts` calcula a agenda (testável, sem depender do celular) e `src/lib/notify.ts`
+  agenda as notificações locais. A agenda inteira é recalculada a cada mudança e ao voltar para o app (no máximo 60
+  lembretes nos próximos 30 dias, por causa do limite de 64 do iPhone). Canais Android: `fv-lembretes` e `fv-alertas`.
 - **Banco de dados:** cada mudança é uma migration numerada em `supabase/migrations/`. Elas só acrescentam
   (não apagam dados), podem ser executadas de novo sem problema e ficam registradas na tabela `app_migrations`.
   Para saber o que já foi aplicado: `select * from app_migrations order by version;`
