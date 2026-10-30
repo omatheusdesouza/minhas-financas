@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORY_COLORS, CATEGORY_ICONS } from '../lib/defaults'
+import { CATEGORY_COLORS, CATEGORY_ICONS, LEGACY_COLOR_MAP } from '../lib/defaults'
 import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
 import { saveFile } from '../lib/exporter'
 import { moneyInput, parseMoney, money } from '../lib/format'
+import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
 import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
 import { useApp } from '../store'
 
 export function Settings() {
   const { user, run } = useApp()
   const [pwOpen, setPwOpen] = useState(false)
+  const [theme, setThemeState] = useState<ThemeChoice>(getTheme())
 
   async function backup() {
     await run(async () => {
@@ -39,6 +41,14 @@ export function Settings() {
             </p>
           </div>
         </div>
+      </section>
+
+      <section className="card">
+        <div className="card-title"><h3>Aparência</h3></div>
+        <Segmented value={theme} onChange={(v) => { setThemeState(v); setTheme(v) }} options={[
+          { value: 'auto', label: 'Automático' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' },
+        ]} />
+        <p className="muted small">No automático, o Fynvault segue o tema do celular.</p>
       </section>
 
       <nav className="card flush menu">
@@ -83,6 +93,15 @@ export function CategoriesScreen() {
   const [editing, setEditing] = useState<Partial<Category> | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const roots = idx.roots(kind, true).filter((c) => showArchived || !c.archived)
+  const legacy = idx.all.filter((c) => LEGACY_COLOR_MAP[c.color.toLowerCase()])
+
+  async function applyPalette() {
+    if (!confirm(`Trocar as cores de ${legacy.length} categoria(s) pelos tons da paleta Fynvault? Categorias em que você escolheu outra cor não mudam.`)) return
+    await run(async () => {
+      for (const c of legacy) await api.saveCategory({ ...c, color: LEGACY_COLOR_MAP[c.color.toLowerCase()] })
+      await reloadMeta()
+    }, 'Cores atualizadas')
+  }
 
   async function move(c: Category, dir: -1 | 1) {
     const siblings = (c.parent_id ? idx.children(c.parent_id, true) : idx.roots(kind, true))
@@ -121,6 +140,12 @@ export function CategoriesScreen() {
       <Segmented value={kind} onChange={setKind} options={[{ value: 'expense', label: 'Gastos' }, { value: 'income', label: 'Ganhos' }]} />
       <button className="btn primary block" onClick={() => setEditing({ kind, parent_id: null })}><Icon name="plus" /> Nova categoria</button>
       <p className="muted small">Toque para editar nome, ícone, cor, tipo e limite mensal. Use as setas para reordenar.</p>
+      {legacy.length > 0 && (
+        <div className="note palette-note">
+          <span>✨ Suas categorias ainda usam as cores antigas. Quer usar os tons da paleta Fynvault?</span>
+          <button className="btn ghost" onClick={applyPalette}>Aplicar cores Fynvault</button>
+        </div>
+      )}
       {roots.map((r) => (
         <section key={r.id} className="card flush">
           {row(r)}
@@ -141,7 +166,7 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
   const kind = cat.kind ?? 'expense'
   const [name, setName] = useState(cat.name ?? '')
   const [icon, setIcon] = useState(cat.icon ?? '🏷️')
-  const [color, setColor] = useState(cat.color ?? CATEGORY_COLORS[9])
+  const [color, setColor] = useState(cat.color ?? CATEGORY_COLORS[0])
   const [nature, setNature] = useState<Nature>(cat.nature ?? 'essencial')
   const [parentId, setParentId] = useState<string | null>(cat.parent_id ?? null)
   const [budget, setBudget] = useState(moneyInput(cat.monthly_budget))

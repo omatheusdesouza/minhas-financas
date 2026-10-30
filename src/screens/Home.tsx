@@ -64,7 +64,7 @@ export function Home() {
       {!view ? <div className="skeleton tall" /> : (
         <>
           <section className="card hero">
-            <p className="muted small">Saldo do período</p>
+            <p className="hero-label">Saldo do período</p>
             <p className={`hero-value ${view.income - view.expense < 0 ? 'neg' : ''}`}>{money(view.income - view.expense)}</p>
             <div className="hero-split">
               <div><span className="dot pos" /> Ganhos<strong>{money(view.income)}</strong></div>

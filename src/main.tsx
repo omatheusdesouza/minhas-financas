@@ -1,18 +1,19 @@
 import { Capacitor } from '@capacitor/core'
-import { StatusBar, Style } from '@capacitor/status-bar'
 import { App as CapApp } from '@capacitor/app'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { App } from './App'
+import { applyTheme } from './lib/theme'
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
+import '@fontsource/cormorant-garamond/600.css'
 import './styles.css'
 
+applyTheme()
+
 if (Capacitor.isNativePlatform()) {
-  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }).catch(() => {})
-  if (Capacitor.getPlatform() === 'android') {
-    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {})
-    StatusBar.setBackgroundColor({ color: dark ? '#0b1215' : '#f4f7f6' }).catch(() => {})
-  }
   // Botão "voltar" do Android: fecha o painel aberto ou volta de tela
   CapApp.addListener('backButton', ({ canGoBack }) => {
     const close = document.querySelector<HTMLButtonElement>('.sheet-head .icon-btn')

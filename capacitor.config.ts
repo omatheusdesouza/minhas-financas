@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appId: 'br.com.minhasfinancas.app',
   appName: 'Fynvault',
   webDir: 'dist',
-  android: { backgroundColor: '#0b1215' },
-  ios: { backgroundColor: '#0b1215', contentInset: 'never' },
+  android: { backgroundColor: '#0B2A3C' },
+  ios: { backgroundColor: '#0B2A3C', contentInset: 'never' },
 }
 
 export default config
