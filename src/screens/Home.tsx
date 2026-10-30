@@ -1,60 +1,83 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { MyAvatar } from '../components/Avatar'
 import { Donut, ScoreRing, SliceList } from '../components/Charts'
+import { ContributionSheet } from '../components/ContributionSheet'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
 import { TxRow } from '../components/TxRow'
 import { api } from '../lib/api'
 import { addDays, today } from '../lib/dates'
-import { money } from '../lib/format'
+import { money, pct } from '../lib/format'
 import { computeHealth } from '../lib/health'
 import { byCategory, sumBy } from '../lib/services'
+import { amt, type SavingsGoal, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 export function Home() {
-  const { idx, user } = useApp()
+  const { idx, profile } = useApp()
   const nav = useNavigate()
   const [p, setP] = useState(initialPeriod('mes'))
   const [showHealth, setShowHealth] = useState(false)
+  const [contribGoal, setContribGoal] = useState<SavingsGoal | null>(null)
   const { from, to } = p.period
 
   const { data } = useLoad(async () => {
-    const [month, unpaid, plans] = await Promise.all([
+    const [month, unpaid, plans, recurring, goals, contributions] = await Promise.all([
       api.listTransactions(from, to),
-      api.listUnpaid(addDays(today(), 10)),
+      api.listUnpaid(addDays(today(), 30)),
       api.listPlanTransactions(),
+      api.listRecurring(),
+      api.listGoals(),
+      api.listContributions(),
     ])
-    return { month, unpaid, plans }
+    return { month, unpaid, plans, recurring, goals, contributions }
   }, [from, to])
 
   const view = useMemo(() => {
     if (!data) return null
-    const { month, unpaid, plans } = data
-    const income = sumBy(month, 'income')
-    const expense = sumBy(month, 'expense')
+    const { month, unpaid, plans, recurring, goals, contributions } = data
+    const active = recurring.filter((r) => r.active)
+    const estimate = new Map(active.map((r) => [r.id, r.amount ?? 0]))
+    // Previsto: contas variáveis ainda sem valor entram pela estimativa da conta fixa
+    const expected = (t: Transaction) => t.amount ?? (t.recurring_bill_id ? estimate.get(t.recurring_bill_id) ?? 0 : 0)
+    const pendingAmounts = month.filter((t) => t.amount == null).length
+    const income = month.filter((t) => t.kind === 'income').reduce((s, t) => s + expected(t), 0)
+    const expense = month.filter((t) => t.kind === 'expense').reduce((s, t) => s + expected(t), 0)
     const paid = month.filter((t) => t.paid)
     const realized = sumBy(paid, 'income') - sumBy(paid, 'expense')
-    const toPay = month.filter((t) => !t.paid && t.kind === 'expense').reduce((s, t) => s + t.amount, 0)
-    const toReceive = month.filter((t) => !t.paid && t.kind === 'income').reduce((s, t) => s + t.amount, 0)
+
+    const fixedIncome = active.filter((r) => r.kind === 'income').reduce((s, r) => s + (r.amount ?? 0), 0)
+    const fixedBills = active.filter((r) => r.kind === 'expense')
+    const fixedExpense = fixedBills.reduce((s, r) => s + (r.amount ?? 0), 0)
+    const variableNoEstimate = fixedBills.filter((r) => r.amount_type === 'variable' && r.amount == null).length
+    const hasVariable = fixedBills.some((r) => r.amount_type === 'variable')
+
+    const goal = goals.find((g) => !g.archived) ?? null
+    const saved = goal ? contributions.filter((c) => c.goal_id === goal.id).reduce((s, c) => s + c.amount, 0) : 0
+
     const overdue = unpaid.filter((t) => t.date < today())
-    const upcoming = unpaid.filter((t) => t.date >= today())
+    const upcoming = unpaid.filter((t) => t.kind === 'expense').sort((a, b) => (a.date < b.date ? -1 : 1))
     const slices = byCategory(month, idx, 'expense')
     const budgets = new Map<string, number>()
     for (const c of idx.roots('expense')) if (c.monthly_budget) budgets.set(c.id, c.monthly_budget)
     const health = computeHealth({ month, overdue, futureInstallments: plans, idx })
-    return { month, income, expense, realized, toPay, toReceive, overdue, upcoming, slices, budgets, health }
+    return {
+      month, income, expense, realized, pendingAmounts, fixedIncome, fixedExpense, variableNoEstimate, hasVariable,
+      goal, saved, upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
+    }
   }, [data, idx])
 
   const hour = new Date().getHours()
   const hello = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
-  const name = user.email.split('@')[0]
 
   return (
     <div className="screen">
-      <header className="top">
-        <div>
+      <header className="top home-top">
+        <Link to="/ajustes/perfil" className="home-avatar" aria-label="Meu perfil"><MyAvatar size={48} /></Link>
+        <div className="grow">
           <p className="muted small">{hello},</p>
-          <h1 className="hello">{name}</h1>
+          <h1 className="hello">{profile?.display_name}</h1>
         </div>
         <Link to="/ajustes" className="icon-btn" aria-label="Ajustes"><Icon name="gear" /></Link>
       </header>
@@ -64,7 +87,7 @@ export function Home() {
       {!view ? <div className="skeleton tall" /> : (
         <>
           <section className="card hero">
-            <p className="hero-label">Saldo do período</p>
+            <p className="hero-label">Saldo previsto do mês</p>
             <p className={`hero-value ${view.income - view.expense < 0 ? 'neg' : ''}`}>{money(view.income - view.expense)}</p>
             <div className="hero-split">
               <div><span className="dot pos" /> Ganhos<strong>{money(view.income)}</strong></div>
@@ -72,9 +95,58 @@ export function Home() {
             </div>
             <div className="hero-foot muted small">
               <span>Já realizado: <b>{money(view.realized)}</b></span>
-              {view.toPay > 0 && <span>A pagar: <b className="neg">{money(view.toPay)}</b></span>}
-              {view.toReceive > 0 && <span>A receber: <b className="pos">{money(view.toReceive)}</b></span>}
+              {view.pendingAmounts > 0 && <span>{view.pendingAmounts} conta(s) com valor estimado</span>}
             </div>
+          </section>
+
+          <section className="stat-grid">
+            <Link to="/contas?tab=fixas" className="card stat">
+              <span className="stat-label">Renda fixa</span>
+              <strong className="pos">{money(view.fixedIncome)}</strong>
+              <span className="muted small">por mês</span>
+            </Link>
+            <Link to="/contas?tab=fixas" className="card stat">
+              <span className="stat-label">Gastos fixos</span>
+              <strong className="neg">{view.hasVariable ? '≈ ' : ''}{money(view.fixedExpense)}</strong>
+              <span className="muted small">
+                {view.fixedIncome > 0 ? `${pct(view.fixedExpense / view.fixedIncome)} da renda fixa` : 'por mês'}
+                {view.variableNoEstimate > 0 && ` · +${view.variableNoEstimate} variável(is)`}
+              </span>
+            </Link>
+          </section>
+
+          {view.goal ? (
+            <button className="card goal-card" onClick={() => setContribGoal(view.goal)}>
+              <div className="goal-top">
+                <span className="goal-icon">{view.goal.icon}</span>
+                <div className="grow">
+                  <span className="stat-label">Meta · {view.goal.name}</span>
+                  <strong>{money(view.saved)} <span className="muted small">de {money(view.goal.target_amount)}</span></strong>
+                </div>
+                <span className="goal-pct">{pct(Math.min(1, view.saved / view.goal.target_amount))}</span>
+              </div>
+              <span className="bar gold"><span style={{ width: `${Math.min(100, (view.saved / view.goal.target_amount) * 100)}%` }} /></span>
+              <span className="muted small">
+                {view.saved >= view.goal.target_amount ? 'Meta alcançada! 🎉'
+                  : view.goal.monthly_contribution ? `Aporte de ${money(view.goal.monthly_contribution)}/mês · toque para registrar`
+                    : 'Toque para registrar um aporte'}
+              </span>
+            </button>
+          ) : null}
+
+          <section className="card">
+            <div className="card-title">
+              <h3>Próximas contas</h3>
+              <Link to="/contas" className="link">Ver todas</Link>
+            </div>
+            {view.upcoming.length ? (
+              <>
+                <div className="legend">
+                  <span><i className="lg good" /> Em dia</span><span><i className="lg warn" /> Perto de vencer</span><span><i className="lg bad" /> Vencida ou crítica</span>
+                </div>
+                {view.upcoming.slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)}
+              </>
+            ) : <p className="empty">Nenhuma conta a pagar nos próximos 30 dias. 🎉</p>}
           </section>
 
           <section className="card health" onClick={() => setShowHealth((v) => !v)}>
@@ -103,26 +175,13 @@ export function Home() {
             <p className="muted small center">{showHealth ? 'Toque para recolher' : 'Toque para ver o detalhe'}</p>
           </section>
 
-          {(view.overdue.length > 0 || view.upcoming.length > 0) && (
-            <section className="card">
-              <div className="card-title">
-                <h3>Contas próximas</h3>
-                <Link to="/contas" className="link">Ver todas</Link>
-              </div>
-              {view.overdue.length > 0 && (
-                <p className="alert"><Icon name="alert" size={16} /> {view.overdue.length} atrasada(s) — {money(view.overdue.reduce((s, t) => s + t.amount, 0))}</p>
-              )}
-              {[...view.overdue, ...view.upcoming].slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)}
-            </section>
-          )}
-
           <section className="card">
             <div className="card-title"><h3>Para onde foi o dinheiro</h3></div>
             {view.slices.length ? (
               <>
-                <Donut data={view.slices} total={view.expense} label="Gastos" />
+                <Donut data={view.slices} total={view.spent} label="Gastos" />
                 <SliceList
-                  data={view.slices} total={view.expense} budgets={view.budgets}
+                  data={view.slices} total={view.spent} budgets={view.budgets}
                   onPick={(s) => nav(`/lancamentos?cat=${s.id}&from=${from}&to=${to}`)}
                 />
               </>
@@ -135,11 +194,12 @@ export function Home() {
               <Link to="/lancamentos" className="link">Ver todos</Link>
             </div>
             {view.month.length
-              ? view.month.slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)
+              ? view.month.filter((t) => amt(t) > 0 || t.paid).slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)
               : <p className="empty">Nada por aqui ainda.</p>}
           </section>
         </>
       )}
+      {contribGoal && <ContributionSheet goal={contribGoal} onClose={() => setContribGoal(null)} />}
     </div>
   )
 }
