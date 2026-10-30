@@ -1,5 +1,6 @@
 import type {
-  Category, Draft, InstallmentPlan, NewInstallmentPlan, PaymentMethod, RecurringBill, Transaction,
+  Bucket, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
+  RecurringBill, SavingsGoal, Transaction,
 } from './types'
 
 export interface User {
@@ -46,4 +47,20 @@ export interface Backend {
   listRecurring(): Promise<RecurringBill[]>
   saveRecurring(r: Draft<RecurringBill>): Promise<RecurringBill>
   deleteRecurring(id: string): Promise<void>
+
+  getProfile(): Promise<Profile | null>
+  saveProfile(p: Omit<Profile, 'user_id'>): Promise<Profile>
+
+  listGoals(): Promise<SavingsGoal[]>
+  saveGoal(g: Draft<SavingsGoal>): Promise<SavingsGoal>
+  deleteGoal(id: string): Promise<void>
+  listContributions(): Promise<GoalContribution[]>
+  saveContribution(c: Draft<GoalContribution>): Promise<GoalContribution>
+  deleteContribution(id: string): Promise<void>
+
+  /** Envia um arquivo para a pasta do usuário no bucket privado; devolve o caminho salvo. */
+  uploadFile(bucket: Bucket, name: string, file: Blob): Promise<string>
+  /** Link temporário para ver um arquivo privado. */
+  fileUrl(bucket: Bucket, path: string): Promise<string>
+  removeFile(bucket: Bucket, path: string): Promise<void>
 }

@@ -1,7 +1,7 @@
 import { addMonths, startOfMonth, today } from './dates'
 import { money, pct } from './format'
 import { CategoryIndex, sumBy } from './services'
-import type { Transaction } from './types'
+import { amt, type Transaction } from './types'
 
 export interface HealthFactor {
   label: string
@@ -54,7 +54,7 @@ export function computeHealth(opts: {
   // 2. Supérfluos (20)
   const superfluous = month
     .filter((t) => t.kind === 'expense' && idx.nature(t.category_id) === 'superfluo')
-    .reduce((s, t) => s + t.amount, 0)
+    .reduce((s, t) => s + amt(t), 0)
   const supShare = expense > 0 ? superfluous / expense : 0
   factors.push({
     label: 'Gastos supérfluos', max: 20, points: lerp(supShare, 0.1, 0.4, 20),
@@ -65,7 +65,7 @@ export function computeHealth(opts: {
   // 3. Parcelas futuras (20): média mensal dos próximos 3 meses em relação à renda
   const limit = addMonths(startOfMonth(today()), 4)
   const next3 = futureInstallments.filter((t) => !t.paid && t.date > today() && t.date < limit)
-  const committedAvg = next3.reduce((s, t) => s + t.amount, 0) / 3
+  const committedAvg = next3.reduce((s, t) => s + amt(t), 0) / 3
   const commitShare = income > 0 ? committedAvg / income : committedAvg > 0 ? 1 : 0
   factors.push({
     label: 'Parcelas comprometidas', max: 20, points: lerp(commitShare, 0.1, 0.4, 20),
@@ -74,7 +74,7 @@ export function computeHealth(opts: {
   if (commitShare > 0.3) tips.push('Suas parcelas futuras pesam muito na renda. Evite novas compras parceladas.')
 
   // 4. Contas atrasadas (15)
-  const overdueTotal = overdue.reduce((s, t) => s + t.amount, 0)
+  const overdueTotal = overdue.reduce((s, t) => s + amt(t), 0)
   factors.push({
     label: 'Contas em dia', max: 15, points: Math.max(0, 15 - overdue.length * 5),
     detail: overdue.length ? `${overdue.length} atrasada(s): ${money(overdueTotal)}` : 'Nenhuma conta atrasada',
@@ -89,7 +89,7 @@ export function computeHealth(opts: {
     const exceeded = budgeted.filter((c) => {
       const spent = month
         .filter((t) => t.kind === 'expense' && (t.category_id === c.id || (!c.parent_id && idx.root(t.category_id)?.id === c.id)))
-        .reduce((s, t) => s + t.amount, 0)
+        .reduce((s, t) => s + amt(t), 0)
       return spent > (c.monthly_budget ?? 0)
     })
     budgetPts = Math.round(10 * (1 - exceeded.length / budgeted.length))

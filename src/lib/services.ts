@@ -1,7 +1,7 @@
 import { api } from './api'
 import { addMonths, dayInMonth, monthsBetween, startOfMonth, today } from './dates'
 import { DEFAULT_CATEGORIES, DEFAULT_PAYMENT_METHODS } from './defaults'
-import type { Category, Kind, RecurringBill, Transaction } from './types'
+import { amt, type Category, type Kind, type RecurringBill, type Transaction } from './types'
 
 /** Na primeira entrada da conta, cria categorias e formas de pagamento iniciais. */
 export async function seedIfEmpty(): Promise<boolean> {
@@ -32,13 +32,21 @@ export async function seedIfEmpty(): Promise<boolean> {
   return seeded
 }
 
-/** Lança as contas fixas do mês atual e do próximo, uma única vez por mês. */
-export async function generateRecurring(bills: RecurringBill[]): Promise<number> {
-  const horizon = addMonths(startOfMonth(today()), 1)
+/**
+ * Lança as contas fixas do mês atual e do próximo, uma única vez por mês.
+ * Com `skipPastDue`, uma conta nova cujo dia deste mês já passou começa no mês seguinte
+ * (usado no onboarding, para a pessoa não começar com contas "vencidas").
+ */
+export async function generateRecurring(bills: RecurringBill[], opts: { skipPastDue?: boolean } = {}): Promise<number> {
+  const current = startOfMonth(today())
+  const horizon = addMonths(current, 1)
   let created = 0
   for (const bill of bills) {
     if (!bill.active) continue
-    const from = bill.generated_until ? addMonths(bill.generated_until, 1) : startOfMonth(bill.start_month)
+    let from = bill.generated_until ? addMonths(bill.generated_until, 1) : startOfMonth(bill.start_month)
+    if (opts.skipPastDue && !bill.generated_until && from === current && dayInMonth(current, bill.day_of_month) < today()) {
+      from = horizon
+    }
     const end = bill.end_month && bill.end_month < horizon ? startOfMonth(bill.end_month) : horizon
     if (from > end) continue
     const months = monthsBetween(from, end)
@@ -49,33 +57,58 @@ export async function generateRecurring(bills: RecurringBill[]): Promise<number>
   return created
 }
 
-function recurringTx(bill: RecurringBill, month: string) {
+export function recurringTx(bill: RecurringBill, month: string) {
   return {
-    kind: bill.kind, amount: bill.amount, date: dayInMonth(month, bill.day_of_month),
+    kind: bill.kind,
+    // Conta variável: o valor de cada mês é informado depois ("Informar valor")
+    amount: bill.amount_type === 'variable' ? null : bill.amount,
+    date: dayInMonth(month, bill.day_of_month),
     description: bill.description, category_id: bill.category_id,
     payment_method_id: bill.payment_method_id, paid: false, paid_at: null, notes: null,
     installment_plan_id: null, installment_number: null,
-    recurring_bill_id: bill.id, recurring_month: month,
+    recurring_bill_id: bill.id, recurring_month: month, receipt_path: null,
   }
 }
 
-/** Ao editar uma conta fixa, atualiza também os lançamentos futuros ainda não pagos. */
+/**
+ * Ao editar uma conta fixa, atualiza também os lançamentos futuros ainda não pagos.
+ * Nas variáveis, um valor já informado para o mês é mantido.
+ */
 export async function propagateRecurring(bill: RecurringBill) {
   const pending = (await api.listTransactions(today(), addMonths(today(), 24)))
     .filter((t) => t.recurring_bill_id === bill.id && !t.paid)
   for (const t of pending) {
     await api.saveTransaction({
-      ...t, amount: bill.amount, description: bill.description, kind: bill.kind,
+      ...t,
+      amount: bill.amount_type === 'variable' ? t.amount : bill.amount,
+      description: bill.description, kind: bill.kind,
       category_id: bill.category_id, payment_method_id: bill.payment_method_id,
       date: dayInMonth(t.recurring_month ?? startOfMonth(t.date), bill.day_of_month),
     })
   }
 }
 
-export async function togglePaid(t: Transaction): Promise<Transaction> {
-  const paid = !t.paid
-  return api.saveTransaction({ ...t, paid, paid_at: paid ? today() : null })
+/** Marca como pago/recebido. O valor é obrigatório (contas variáveis precisam informá-lo antes). */
+export async function markPaid(t: Transaction, opts: { amount: number; paidAt?: string; receiptPath?: string | null }) {
+  if (!(opts.amount > 0)) throw new Error('Informe um valor maior que zero.')
+  return api.saveTransaction({
+    ...t, amount: opts.amount, paid: true, paid_at: opts.paidAt ?? today(),
+    receipt_path: opts.receiptPath === undefined ? t.receipt_path : opts.receiptPath,
+  })
 }
+
+export async function markUnpaid(t: Transaction) {
+  return api.saveTransaction({ ...t, paid: false, paid_at: null })
+}
+
+/** Só informa o valor do mês de uma conta variável, sem marcar como paga. */
+export async function setAmount(t: Transaction, amount: number) {
+  if (!(amount > 0)) throw new Error('Informe um valor maior que zero.')
+  return api.saveTransaction({ ...t, amount })
+}
+
+/** Conta a pagar sem valor informado (conta variável do mês). */
+export const needsAmount = (t: Transaction) => !t.paid && t.amount == null
 
 /** Helpers de categoria */
 export class CategoryIndex {
@@ -118,7 +151,7 @@ export interface Slice {
 }
 
 export function sumBy(txs: Transaction[], kind: Kind) {
-  return txs.reduce((s, t) => (t.kind === kind ? s + t.amount : s), 0)
+  return txs.reduce((s, t) => (t.kind === kind ? s + amt(t) : s), 0)
 }
 
 /** Total por categoria principal (ou por subcategoria de uma principal). */
@@ -135,7 +168,7 @@ export function byCategory(txs: Transaction[], idx: CategoryIndex, kind: Kind, p
     const s = map.get(id) ?? {
       id, name: key?.name ?? 'Sem categoria', icon: key?.icon ?? '❔', color: key?.color ?? '#94a3b8', total: 0,
     }
-    s.total += t.amount
+    s.total += amt(t)
     map.set(id, s)
   }
   return [...map.values()].sort((a, b) => b.total - a.total)

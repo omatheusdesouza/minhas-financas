@@ -1,6 +1,8 @@
 import type { Backend, User } from './backend'
 import { splitInstallments } from './installments'
-import type { Category, Draft, InstallmentPlan, PaymentMethod, RecurringBill, Transaction } from './types'
+import type {
+  Category, Draft, GoalContribution, InstallmentPlan, PaymentMethod, Profile, RecurringBill, SavingsGoal, Transaction,
+} from './types'
 
 /** Modo demonstração: guarda tudo no próprio aparelho, sem conta e sem nuvem. */
 
@@ -10,6 +12,8 @@ type Tables = {
   transactions: Transaction
   installment_plans: InstallmentPlan
   recurring_bills: RecurringBill
+  savings_goals: SavingsGoal
+  goal_contributions: GoalContribution
 }
 
 const PREFIX = 'mf-demo:'
@@ -153,7 +157,7 @@ export function createLocalBackend(): Backend {
           category_id: p.category_id, payment_method_id: p.payment_method_id,
           paid, paid_at: paid ? part.date : null, notes: null,
           installment_plan_id: plan.id, installment_number: part.number,
-          recurring_bill_id: null, recurring_month: null,
+          recurring_bill_id: null, recurring_month: null, receipt_path: null,
         })
       }
       store('transactions', rows)
@@ -168,7 +172,10 @@ export function createLocalBackend(): Backend {
     },
 
     async listRecurring() {
-      return load('recurring_bills').sort((a, b) => a.day_of_month - b.day_of_month)
+      // contas criadas antes da 0002 não têm amount_type: equivalem a "fixo"
+      return load('recurring_bills')
+        .map((r) => ({ ...r, amount_type: r.amount_type ?? 'fixed', income_source: r.income_source ?? null }))
+        .sort((a, b) => a.day_of_month - b.day_of_month)
     },
     async saveRecurring(r) {
       return upsert('recurring_bills', r)
@@ -176,6 +183,58 @@ export function createLocalBackend(): Backend {
     async deleteRecurring(id) {
       remove('recurring_bills', id)
       store('transactions', load('transactions').map((t) => (t.recurring_bill_id === id ? { ...t, recurring_bill_id: null } : t)))
+    },
+
+    async getProfile() {
+      try {
+        return JSON.parse(localStorage.getItem(PREFIX + 'profile') ?? 'null')
+      } catch {
+        return null
+      }
+    },
+    async saveProfile(p) {
+      const full: Profile = { ...p, user_id: DEMO_USER.id }
+      localStorage.setItem(PREFIX + 'profile', JSON.stringify(full))
+      return full
+    },
+
+    async listGoals() {
+      return load('savings_goals')
+    },
+    async saveGoal(g) {
+      return upsert('savings_goals', g)
+    },
+    async deleteGoal(id) {
+      remove('savings_goals', id)
+      store('goal_contributions', load('goal_contributions').filter((c) => c.goal_id !== id))
+    },
+    async listContributions() {
+      return load('goal_contributions').sort((a, b) => (a.date < b.date ? 1 : -1))
+    },
+    async saveContribution(c) {
+      return upsert('goal_contributions', c)
+    },
+    async deleteContribution(id) {
+      remove('goal_contributions', id)
+    },
+
+    // Arquivos do modo demonstração ficam no próprio aparelho, como data URL
+    async uploadFile(bucket, name, file) {
+      const data = await new Promise<string>((ok, fail) => {
+        const r = new FileReader()
+        r.onload = () => ok(String(r.result))
+        r.onerror = () => fail(new Error('Não foi possível ler o arquivo.'))
+        r.readAsDataURL(file)
+      })
+      const path = `${DEMO_USER.id}/${name}-${uid()}`
+      localStorage.setItem(`${PREFIX}file:${bucket}/${path}`, data)
+      return path
+    },
+    async fileUrl(bucket, path) {
+      return localStorage.getItem(`${PREFIX}file:${bucket}/${path}`) ?? ''
+    },
+    async removeFile(bucket, path) {
+      localStorage.removeItem(`${PREFIX}file:${bucket}/${path}`)
     },
   }
 }

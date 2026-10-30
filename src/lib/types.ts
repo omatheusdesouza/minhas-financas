@@ -1,5 +1,7 @@
 export type Kind = 'expense' | 'income'
 export type Nature = 'essencial' | 'superfluo' | 'investimento'
+export type AmountType = 'fixed' | 'variable'
+export type IncomeSource = 'trabalho' | 'aluguel' | 'pensao' | 'beneficio' | 'outro'
 
 export interface Category {
   id: string
@@ -23,7 +25,8 @@ export interface PaymentMethod {
 export interface Transaction {
   id: string
   kind: Kind
-  amount: number
+  /** null = conta variável cujo valor ainda não foi informado (só quando não paga) */
+  amount: number | null
   date: string // YYYY-MM-DD
   description: string
   category_id: string | null
@@ -35,6 +38,7 @@ export interface Transaction {
   installment_number: number | null
   recurring_bill_id: string | null
   recurring_month: string | null
+  receipt_path: string | null
 }
 
 export interface InstallmentPlan {
@@ -53,7 +57,10 @@ export interface RecurringBill {
   id: string
   description: string
   kind: Kind
-  amount: number
+  /** Valor mensal; nas contas variáveis é só uma estimativa opcional */
+  amount: number | null
+  amount_type: AmountType
+  income_source: IncomeSource | null
   day_of_month: number
   category_id: string | null
   payment_method_id: string | null
@@ -77,3 +84,37 @@ export interface NewInstallmentPlan {
 }
 
 export type Draft<T extends { id: string }> = Omit<T, 'id'> & { id?: string }
+
+export interface Profile {
+  user_id: string
+  display_name: string
+  avatar_emoji: string | null
+  avatar_path: string | null
+  reminder_time: string // HH:MM[:SS]
+  onboarding_completed_at: string | null
+}
+
+export interface SavingsGoal {
+  id: string
+  name: string
+  icon: string
+  color: string
+  target_amount: number
+  monthly_contribution: number | null
+  contribution_day: number | null
+  target_date: string | null
+  archived: boolean
+}
+
+export interface GoalContribution {
+  id: string
+  goal_id: string
+  amount: number
+  date: string
+  note: string | null
+}
+
+export type Bucket = 'avatars' | 'receipts'
+
+/** Valor de um lançamento para somas: sem valor informado conta como zero. */
+export const amt = (t: { amount: number | null }) => t.amount ?? 0

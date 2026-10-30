@@ -1,11 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Backend, User } from './backend'
-import type { Category, InstallmentPlan, RecurringBill, Transaction } from './types'
+import type { Category, GoalContribution, InstallmentPlan, Profile, RecurringBill, SavingsGoal, Transaction } from './types'
 
 const num = (v: unknown) => (v == null ? v : Number(v))
 
 function normTx(r: any): Transaction {
-  return { ...r, amount: Number(r.amount) }
+  return { ...r, amount: num(r.amount) as number | null }
 }
 function normCat(r: any): Category {
   return { ...r, monthly_budget: num(r.monthly_budget) }
@@ -14,7 +14,17 @@ function normPlan(r: any): InstallmentPlan {
   return { ...r, total_amount: Number(r.total_amount) }
 }
 function normRec(r: any): RecurringBill {
+  return { ...r, amount: num(r.amount) as number | null }
+}
+function normGoal(r: any): SavingsGoal {
+  return { ...r, target_amount: Number(r.target_amount), monthly_contribution: num(r.monthly_contribution) as number | null }
+}
+function normContrib(r: any): GoalContribution {
   return { ...r, amount: Number(r.amount) }
+}
+
+const EXT: Record<string, string> = {
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf',
 }
 
 /** Mensagens de erro do Supabase traduzidas para o usuário. */
@@ -25,6 +35,8 @@ function translate(message: string): string {
   if (m.includes('user already registered')) return 'Já existe uma conta com este e-mail.'
   if (m.includes('password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.'
   if (m.includes('token has expired') || m.includes('otp')) return 'Código inválido ou expirado. Peça um novo.'
+  if (m.includes('payload too large') || m.includes('exceeded the maximum allowed size')) return 'Arquivo grande demais.'
+  if (m.includes('mime type') || m.includes('invalid_mime')) return 'Tipo de arquivo não permitido. Use foto (JPG/PNG) ou PDF.'
   if (m.includes('rate limit')) return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'
   if (m.includes('failed to fetch') || m.includes('network')) return 'Sem conexão com a internet.'
   return message
@@ -179,6 +191,51 @@ export function createSupabaseBackend(url: string, key: string): Backend {
     },
     async deleteRecurring(id) {
       check(await sb.from('recurring_bills').delete().eq('id', id))
+    },
+
+    async getProfile() {
+      return check(await sb.from('profiles').select('*').maybeSingle()) as Profile | null
+    },
+    async saveProfile(p) {
+      return check(await sb.from('profiles').upsert(clean(p)).select().single()) as Profile
+    },
+
+    async listGoals() {
+      const data = check(await sb.from('savings_goals').select('*').order('created_at'))
+      return (data ?? []).map(normGoal)
+    },
+    async saveGoal(g) {
+      return normGoal(check(await sb.from('savings_goals').upsert(clean(g)).select().single()))
+    },
+    async deleteGoal(id) {
+      check(await sb.from('savings_goals').delete().eq('id', id))
+    },
+    async listContributions() {
+      const data = check(await sb.from('goal_contributions').select('*').order('date', { ascending: false }).limit(5000))
+      return (data ?? []).map(normContrib)
+    },
+    async saveContribution(c) {
+      return normContrib(check(await sb.from('goal_contributions').upsert(clean(c)).select().single()))
+    },
+    async deleteContribution(id) {
+      check(await sb.from('goal_contributions').delete().eq('id', id))
+    },
+
+    async uploadFile(bucket, name, file) {
+      const { data } = await sb.auth.getSession()
+      const uid = data.session?.user.id
+      if (!uid) throw new Error('Faça login novamente.')
+      const ext = EXT[file.type] ?? 'bin'
+      const path = `${uid}/${name}-${crypto.randomUUID()}.${ext}`
+      check(await sb.storage.from(bucket).upload(path, file, { contentType: file.type, upsert: false }))
+      return path
+    },
+    async fileUrl(bucket, path) {
+      const data = check(await sb.storage.from(bucket).createSignedUrl(path, 3600))
+      return data.signedUrl as string
+    },
+    async removeFile(bucket, path) {
+      check(await sb.storage.from(bucket).remove([path]))
     },
   }
 }
