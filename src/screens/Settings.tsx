@@ -15,6 +15,7 @@ import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
 import { moneyInput, parseMoney, money } from '../lib/format'
+import { updateApp } from '../lib/updates'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
 import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
 import { useApp } from '../store'
@@ -84,11 +85,8 @@ export function Settings() {
       <p className="muted small center">Fynvault · Personal finance · versão 1.1 · {new Date(__APP_BUILD__).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</p>
       {!Capacitor.isNativePlatform() && (
         <button className="link center small" disabled={updating} onClick={async () => {
-          // busca a versão nova do site e recarrega (o app guarda uma cópia para abrir sem internet)
           setUpdating(true)
-          const reg = await navigator.serviceWorker?.getRegistration().catch(() => undefined)
-          await reg?.update().catch(() => {})
-          setTimeout(() => location.reload(), 1500)
+          await updateApp()
         }}>{updating ? 'Atualizando…' : 'Procurar atualização do app'}</button>
       )}
       {pwOpen && <PasswordSheet onClose={() => setPwOpen(false)} />}

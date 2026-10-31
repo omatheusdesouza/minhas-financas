@@ -33,6 +33,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // versão nova entra na hora (sem esperar fechar todas as janelas do app); a página recarrega sozinha
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
