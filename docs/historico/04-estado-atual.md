@@ -1,6 +1,6 @@
 # 04 — Estado atual (31/10/2026)
 
-Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0007 aplicadas**; **0008 escrita, aguardando o usuário rodar**.
+Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0008 aplicadas**.
 
 ## Pronto
 
@@ -31,7 +31,7 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | Dependências atualizadas (segurança), CI em Node 22, backup semanal criptografado e suporte à chave privada do Android | Pronto (backup e chave privada dependem de secrets no GitHub) |
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
 | Proteção do site (CSP, não abre dentro de outro site, build sem comentários), senha com letras e números | Pronto |
-| Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Código pronto; depende da migration 0008, de cadastrar o gestor e do secret `SUPABASE_DB_URL` |
+| Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada em 31/10/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
 | README atualizado, 94 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
@@ -67,7 +67,7 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
    `skipWaiting`/`clientsClaim` no `vite.config.ts` (já corrigido no `main`), senão a versão nova fica esperando até fechar
    todas as janelas do app.
 
-1. Rodar a migration 0008, cadastrar o e-mail do gestor (README › 5) e ligar Dependabot alerts e Secret scanning no GitHub.
+1. Confirmar o cadastro do gestor (README › 5) e ligar Dependabot alerts e Secret scanning no GitHub.
    Opcional no Supabase: CAPTCHA no login, verificação em duas etapas (MFA) e Leaked password protection (plano Pro).
 2. Instalar a v1.1.10 por cima e testar offline (modo avião → lançar/pagar → voltar → "Tudo sincronizado ✓").
 3. Testar o modo família com uma segunda conta (visualizar, editar, remover).
