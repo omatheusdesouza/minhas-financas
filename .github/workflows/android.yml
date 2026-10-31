@@ -12,14 +12,14 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
@@ -43,18 +43,33 @@ jobs:
 
       - name: Compilar APK
         working-directory: android
+        env:
+          # Chave privada (opcional): com ela o APK sai assinado em release; sem ela, usa a chave debug do projeto
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk ../Fynvault.apk
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$ANDROID_KEYSTORE_PATH"
+            ./gradlew assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/app-release.apk ../Fynvault.apk
+            rm -f "$ANDROID_KEYSTORE_PATH"
+          else
+            echo "::warning::Sem chave privada (ANDROID_KEYSTORE_BASE64): APK assinado com a chave debug pública do projeto."
+            ./gradlew assembleDebug --no-daemon
+            cp app/build/outputs/apk/debug/app-debug.apk ../Fynvault.apk
+          fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Fynvault-apk
           path: Fynvault.apk
 
       - name: Publicar na página de Releases
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v1.1.${{ github.run_number }}
           name: Fynvault 1.1.${{ github.run_number }}
