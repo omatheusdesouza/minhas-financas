@@ -1,3 +1,4 @@
+import { budgetStatus } from './budgets'
 import { addMonths, startOfMonth, today } from './dates'
 import { money, pct } from './format'
 import { CategoryIndex, sumBy } from './services'
@@ -82,16 +83,11 @@ export function computeHealth(opts: {
   if (overdue.length) tips.push(`Você tem ${overdue.length} conta(s) atrasada(s). Priorize quitá-las para evitar juros.`)
 
   // 5. Orçamentos (10)
-  const budgeted = idx.all.filter((c) => c.kind === 'expense' && c.monthly_budget && !c.archived)
+  const budgeted = budgetStatus(month, idx)
   let budgetPts = 7
   let budgetDetail = 'Nenhum limite definido'
   if (budgeted.length) {
-    const exceeded = budgeted.filter((c) => {
-      const spent = month
-        .filter((t) => t.kind === 'expense' && (t.category_id === c.id || (!c.parent_id && idx.root(t.category_id)?.id === c.id)))
-        .reduce((s, t) => s + amt(t), 0)
-      return spent > (c.monthly_budget ?? 0)
-    })
+    const exceeded = budgeted.filter((s) => s.spent > s.limit).map((s) => s.category)
     budgetPts = Math.round(10 * (1 - exceeded.length / budgeted.length))
     budgetDetail = exceeded.length
       ? `${exceeded.length} de ${budgeted.length} limite(s) estourado(s)`
