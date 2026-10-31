@@ -1,5 +1,5 @@
 import { App as CapApp } from '@capacitor/app'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { TermsGate } from './components/Legal'
@@ -12,18 +12,30 @@ import { initNotifications, syncReminders } from './lib/notify'
 import { shortcutFor } from './lib/shortcuts'
 import type { User } from './lib/backend'
 import { Auth } from './screens/Auth'
-import { Bills } from './screens/Bills'
-import { FamilyScreen } from './screens/Family'
-import { GoalDetailScreen, GoalsScreen } from './screens/Goals'
 import { Home } from './screens/Home'
-import { ImportScreen } from './screens/Import'
-import { Onboarding } from './screens/Onboarding'
-import { Reports } from './screens/Reports'
-import { ReserveDetailScreen, ReservesScreen } from './screens/Reserves'
-import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from './screens/Settings'
-import { Transactions } from './screens/Transactions'
 import { LockProvider } from './lockContext'
 import { AppProvider, useApp } from './store'
+
+/** Telas carregadas só quando abertas (o Início vem junto com o app, para abrir rápido). */
+function page<M>(load: () => Promise<M>, name: keyof M) {
+  return lazy(() => load().then((m) => ({ default: m[name] as ComponentType })))
+}
+const Transactions = page(() => import('./screens/Transactions'), 'Transactions')
+const ImportScreen = page(() => import('./screens/Import'), 'ImportScreen')
+const Bills = page(() => import('./screens/Bills'), 'Bills')
+const Reports = page(() => import('./screens/Reports'), 'Reports')
+const Settings = page(() => import('./screens/Settings'), 'Settings')
+const CategoriesScreen = page(() => import('./screens/Settings'), 'CategoriesScreen')
+const PaymentMethodsScreen = page(() => import('./screens/Settings'), 'PaymentMethodsScreen')
+const ProfileScreen = page(() => import('./screens/Settings'), 'ProfileScreen')
+const FamilyScreen = page(() => import('./screens/Family'), 'FamilyScreen')
+const GoalsScreen = page(() => import('./screens/Goals'), 'GoalsScreen')
+const GoalDetailScreen = page(() => import('./screens/Goals'), 'GoalDetailScreen')
+const ReservesScreen = page(() => import('./screens/Reserves'), 'ReservesScreen')
+const ReserveDetailScreen = page(() => import('./screens/Reserves'), 'ReserveDetailScreen')
+const Onboarding = page(() => import('./screens/Onboarding'), 'Onboarding')
+
+const Loading = () => <div className="screen"><div className="skeleton tall" /></div>
 
 export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -45,7 +57,7 @@ export function App() {
   if (user.termsVersion !== LEGAL_VERSION && !termsSkipped) return <TermsGate user={user} onSkip={() => setTermsSkipped(true)} />
 
   return (
-    <AppProvider user={user} onboarding={<Onboarding />}>
+    <AppProvider user={user} onboarding={<Suspense fallback={<div className="splash"><div className="spinner" /></div>}><Onboarding /></Suspense>}>
       <LockProvider>
         <HashRouter>
           <Shell />
@@ -107,23 +119,25 @@ function Shell() {
     <div className="app">
       <Sidebar onHelp={() => setHelp(true)} />
       <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/lancamentos" element={<Transactions />} />
-          <Route path="/lancamentos/importar" element={<ImportScreen />} />
-          <Route path="/contas" element={<Bills />} />
-          <Route path="/relatorios" element={<Reports />} />
-          <Route path="/ajustes" element={<Settings />} />
-          <Route path="/ajustes/categorias" element={<CategoriesScreen />} />
-          <Route path="/ajustes/pagamentos" element={<PaymentMethodsScreen />} />
-          <Route path="/ajustes/perfil" element={<ProfileScreen />} />
-          <Route path="/ajustes/familia" element={<FamilyScreen />} />
-          <Route path="/metas" element={<GoalsScreen />} />
-          <Route path="/metas/:id" element={<GoalDetailScreen />} />
-          <Route path="/reservas" element={<ReservesScreen />} />
-          <Route path="/reservas/:id" element={<ReserveDetailScreen />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/lancamentos" element={<Transactions />} />
+            <Route path="/lancamentos/importar" element={<ImportScreen />} />
+            <Route path="/contas" element={<Bills />} />
+            <Route path="/relatorios" element={<Reports />} />
+            <Route path="/ajustes" element={<Settings />} />
+            <Route path="/ajustes/categorias" element={<CategoriesScreen />} />
+            <Route path="/ajustes/pagamentos" element={<PaymentMethodsScreen />} />
+            <Route path="/ajustes/perfil" element={<ProfileScreen />} />
+            <Route path="/ajustes/familia" element={<FamilyScreen />} />
+            <Route path="/metas" element={<GoalsScreen />} />
+            <Route path="/metas/:id" element={<GoalDetailScreen />} />
+            <Route path="/reservas" element={<ReservesScreen />} />
+            <Route path="/reservas/:id" element={<ReserveDetailScreen />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
 
       <nav className="tabbar" aria-label="Navegação principal">

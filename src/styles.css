@@ -777,3 +777,4 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .budget-row { display: flex; flex-direction: column; gap: 4px; color: inherit; }
 .budget-row .factor-top { font-size: 14px; }
 button.goal-empty { text-align: left; font: inherit; color: inherit; width: 100%; }
+.donut-loading { height: 200px; border-radius: 50%; margin: 0 auto; width: 200px; background: radial-gradient(circle, var(--surface) 0 55%, var(--surface-2) 56% 100%); }
