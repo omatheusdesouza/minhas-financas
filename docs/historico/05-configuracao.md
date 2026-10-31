@@ -48,6 +48,10 @@ Todas são idempotentes e só acrescentam. Conferir: `select * from app_migratio
 | `0002_perfil_onboarding_metas.sql` | profiles; contas fixas/variáveis (`amount_type`, `income_source`); `receipt_path`; savings_goals, goal_contributions; buckets avatars/receipts |
 | `0003_sincronizacao_offline.sql` | `updated_at` + `client_updated_at` em tudo; gatilho `skip_stale_update`; índices de sincronização; `deleted_rows` + gatilho `log_deletion` |
 | `0004_modo_familia.sql` | family_members, family_invites; funções `can_access`, `same_family`, `accept_family_invite`; políticas de família |
+| `0005_lgpd_excluir_conta.sql` | função `delete_my_account` |
+| `0006_reservas.sql` | reservas (`savings_goals` sem alvo), `goal_contributions.kind`, `app_schema_version()` |
+| `0007_cartao_credito.sql` | cartão (`type`, `closing_day`, `due_day`, `credit_limit`), `transactions.purchase_date` |
+| `0008_gestor_seguranca.sql` | `app_admins`, `security_events`, `security_alerts`; `log_security_event`, `join_family` (limite de convite), funções `admin_*`; funções antigas fechadas para `anon` |
 
 ## Tabelas (schema `public`)
 
@@ -65,6 +69,9 @@ Todas são idempotentes e só acrescentam. Conferir: `select * from app_migratio
 | `family_members` | owner_id, member_id, role (editor/viewer) | pk (owner_id, member_id), owner ≠ member |
 | `family_invites` | code (pk) `^[A-Z2-9]{6}$`, owner_id, role, expires_at (7 dias), used_by, used_at | |
 | `app_migrations` | version, applied_at | controle das migrations |
+| `app_admins` | user_id | gestores; sem políticas (só pelo SQL Editor) |
+| `security_events` | kind, email, user_id, ip, user_agent, detail | só pelas funções; apagados após 90 dias |
+| `security_alerts` | dedupe (regra+quem+dia), level, title, detail, resolved_at, notified_at | só pelas funções |
 
 Todas as tabelas de dados têm `created_at`, `updated_at`, `client_updated_at` (a partir da 0003).
 
@@ -76,7 +83,9 @@ Todas as tabelas de dados têm `created_at`, `updated_at`, `client_updated_at` (
 - `profiles`: `profile read` (próprio ou `same_family`), `profile write` (só o próprio).
 - `deleted_rows`: `own deletions` (select via `can_access`).
 - `family_members`: leitura pelo dono ou pelo membro; update só do dono; delete pelo dono (remover) ou membro (sair).
-- `family_invites`: `own invites` (só o dono). Aceite apenas pela função `accept_family_invite(p_code)`.
+- `family_invites`: `own invites` (só o dono). Aceite apenas pela função `join_family(p_code)` (0008, 10 erros por hora;
+  `accept_family_invite` antiga passa por ela).
+- `app_admins`, `security_events`, `security_alerts`: RLS ligado e nenhuma política — só funções `security definer`.
 
 ## Storage (buckets privados)
 
@@ -93,3 +102,11 @@ Acesso no app por links temporários (signed URLs).
 
 E-mail + senha; recuperação de senha por código (OTP) enviado por e-mail. Provedor de e-mail configurado no painel
 do Supabase (Authentication → Providers / Email).
+
+## Segurança (0008)
+
+- Gestor: `insert into public.app_admins (user_id) select id from auth.users where email = '...';` no SQL Editor.
+- CSP da versão web gerada no `vite.config.ts` (endereço do Supabase vem de `VITE_SUPABASE_URL`); o APK é montado com
+  `VITE_TARGET=android` e não leva CSP.
+- `security-check.yml`: todo dia, com o secret `SUPABASE_DB_URL`, marca alertas novos como avisados, apaga registros com
+  mais de 90 dias, roda `npm audit` e abre/comenta uma issue `seguranca` (sem dados pessoais).

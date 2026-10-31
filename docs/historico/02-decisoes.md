@@ -110,3 +110,18 @@ Cada item: **decisão** — motivo.
 - **Conta em aberto com o mesmo valor (até 5 dias) recebe baixa** em vez de virar lançamento novo.
 - **Pagamento de fatura, aplicações e caixinhas vêm desmarcados** (as compras do cartão e as reservas já contam).
 - **Categoria sugerida:** primeiro pelo que o usuário já usou para a mesma descrição, depois por palavras comuns (iFood, posto…).
+
+## Segurança e gestor (31/10/2026)
+
+- **Não bloquear F12/botão direito:** não impede ninguém de ver o código e atrapalha acessibilidade. Esconder código não é
+  proteção; RLS, CSP e funções no banco são.
+- **Gestor dentro do app, não app separado:** mesmo login e mesmo deploy; quem decide é a tabela `app_admins` no banco.
+- **Painel sem dados financeiros (LGPD):** só conta e segurança. Ver finanças alheias sem motivo violaria a finalidade.
+- **Senha errada é registrada pelo app** (o Supabase não expõe as falhas de login ao banco); tentativas direto na API
+  aparecem em Supabase › Logs › Auth. Por isso o registro aceita chamada sem login, com limite por IP e trava geral.
+- **Sem travar login por e-mail:** um atacante poderia trancar a conta de outra pessoa errando a senha de propósito.
+- **`join_family` devolve o erro em JSON** em vez de exceção: exceção desfaria o registro da tentativa e o limite não valeria.
+- **CSP só na web:** o APK não leva a política (evita risco com a ponte nativa do Capacitor).
+- **Issue sem dados pessoais:** o repositório é público; os detalhes ficam só no painel.
+- **Excluir conta pelo gestor não apaga fotos/comprovantes:** o Supabase não deixa apagar arquivos por SQL; o painel avisa a pasta.
+

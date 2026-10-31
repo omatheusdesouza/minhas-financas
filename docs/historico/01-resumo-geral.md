@@ -76,3 +76,14 @@ O app passou a rodar também no navegador como app instalável (PWA), publicado 
 (`https://omatheusdesouza.github.io/minhas-financas/`) pelo workflow `web.yml`. No iPhone é instalado pelo
 Safari (Adicionar à Tela de Início), já que o iOS não instala APK. Site URL do Supabase apontada para o site.
 Testado pelo usuário no iPhone. Na web não há lembretes com o app fechado nem biometria; o PIN funciona.
+
+## 6. Segurança e painel do gestor (31/10/2026)
+
+O usuário pediu para "bloquear o código" que aparece no F12 e deixar o app o mais seguro possível. Explicado que o
+código de um site sempre chega ao navegador (e o repositório é público); a proteção real está no banco. Feito:
+política de segurança de conteúdo (CSP) na versão web, bloqueio de abrir o site dentro de outro, build sem comentários,
+senha com letras e números. Depois o usuário pediu um "app de gestor": virou a tela **Painel do gestor** dentro do
+próprio app (migration 0008), com pessoas, acessos e senhas erradas, alertas automáticos, bloquear e excluir conta, e
+uma verificação diária no GitHub que abre issue (sem dados pessoais) quando há alerta novo ou biblioteca com falha.
+Política de Privacidade atualizada (registros de segurança por 90 dias) e versão dos termos trocada (novo aceite).
+

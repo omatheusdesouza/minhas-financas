@@ -122,9 +122,29 @@ A Apple só permite instalar apps no iPhone por meio dela. Há dois caminhos:
 **No Supabase (Authentication):**
 
 - **Sign In / Providers › Email:** **Confirm email** ligado; **Minimum password length** = 8; em **Password requirements**,
-  escolha letras e números. O app já pede no mínimo 8 caracteres.
+  escolha letras e números. O app já pede no mínimo 8 caracteres, com letras e números.
 - **Leaked password protection** (bloqueia senhas que já vazaram na internet): disponível a partir do plano Pro.
 - **Rate limits:** os limites padrão de cadastro e login já protegem contra tentativas em massa.
+
+**Painel do gestor e alertas de segurança** (migration 0008):
+
+1. No Supabase › **SQL Editor**, rode `supabase/migrations/0008_gestor_seguranca.sql`.
+2. Torne-se gestor (uma vez só), trocando pelo e-mail com que você entra no app:
+   ```sql
+   insert into public.app_admins (user_id) select id from auth.users where email = 'seu-email@exemplo.com' on conflict do nothing;
+   ```
+3. Abra o app de novo: aparece **Gestor** no menu lateral (computador) e **Ajustes › Painel do gestor** (celular), com
+   pessoas cadastradas, último acesso, senhas erradas, convites errados, alertas e as ações **bloquear** e **excluir conta**.
+   O painel não mostra lançamentos nem valores de ninguém. Só quem está em `app_admins` consegue usar: o banco recusa os demais.
+4. **Aviso por e-mail:** com o secret `SUPABASE_DB_URL` (o mesmo do backup), o workflow `security-check.yml` confere
+   todo dia os alertas novos e as bibliotecas com falha conhecida e, se houver algo, abre uma issue com o rótulo
+   `seguranca` (o GitHub manda e-mail). A issue não traz e-mails nem IPs, porque o repositório é público.
+5. No GitHub, em **Settings › Code security**, ligue **Dependabot alerts** e **Secret scanning** (avisos de biblioteca com
+   falha e de senha publicada por engano).
+
+**Proteção do site:** a versão web tem política de segurança de conteúdo (só roda o próprio código e só fala com o
+Supabase do app), não abre dentro de páginas de outros sites e é publicada sem mapas de código nem comentários.
+O código de um site sempre pode ser visto pelo navegador (F12); a segurança dos dados está no banco (RLS), não em esconder o código.
 
 **Chave privada do Android** (o `android/app/debug.keystore` é público: qualquer pessoa poderia assinar um APK com ele):
 
@@ -210,6 +230,12 @@ npx cap open android    # abre no Android Studio
 - **Reservas:** são linhas de `savings_goals` sem valor-alvo; entradas e retiradas ficam em `goal_contributions` (negativo =
   retirada; `kind` = `initial`/`adjust` não conta como dinheiro do mês). Regras em `src/lib/reserves.ts` (testadas). Precisa da
   migration 0006; sem ela o app mostra um aviso (consulta `app_schema_version()`).
+- **Segurança e gestor:** migration 0008. `security_events` (registros, apagados após 90 dias) e `security_alerts`
+  (regras no banco, função `security_log`) só são lidos pelas funções `admin_*`, que conferem `app_admins` (`require_admin`).
+  O app registra senha errada, acesso, recuperação de senha e bloqueios da CSP por `log_security_event` (limite por IP);
+  o convite da família passa por `join_family`, com 10 erros por hora. Tela em `src/screens/Admin.tsx` (carregada sob
+  demanda), regras de exibição em `src/lib/admin.ts` e de senha/CSP em `src/lib/security.ts` (testadas). A CSP é gerada
+  no `vite.config.ts` com o endereço do Supabase; o APK (`VITE_TARGET=android`) não a leva.
 - **Lembretes:** `src/lib/reminders.ts` calcula a agenda (testável, sem depender do celular) e `src/lib/notify.ts`
   agenda as notificações locais. A agenda inteira é recalculada a cada mudança e ao voltar para o app (no máximo 60
   lembretes nos próximos 30 dias, por causa do limite de 64 do iPhone). Canais Android: `fv-lembretes` e `fv-alertas`.
