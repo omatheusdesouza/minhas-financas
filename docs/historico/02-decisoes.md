@@ -94,3 +94,11 @@ Cada item: **decisão** — motivo.
 - **Commits pequenos com mensagens claras em português; push a cada fase.**
 - **Testes ponta a ponta contra Postgres real com as migrations** — o binário PostgREST não pôde ser baixado,
   então foi escrito um servidor que imita a API do Supabase.
+
+## Cartão de crédito (31/10/2026)
+
+- **A compra no cartão conta no mês da fatura** (escolha do usuário): o lançamento guarda o vencimento da fatura em `date`
+  e o dia da compra em `purchase_date`. Assim todas as telas, relatórios e o saldo do mês já seguem a fatura sem regra extra.
+- **Fatura não é tabela:** é o grupo das compras do cartão com o mesmo vencimento; pagar = marcar essas compras como pagas.
+- **Compra no dia do fechamento vai para a fatura seguinte.**
+- Fica para depois: pagamento parcial (rotativo), estorno e assinatura mensal no cartão (conta fixa paga no cartão).

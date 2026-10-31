@@ -11,8 +11,9 @@
 | **Início** | Saldo do mês, ganhos × gastos, **índice de saúde financeira (0 a 100)** com dicas, contas atrasadas e próximas, gráfico de para onde foi o dinheiro e limites por categoria. |
 | **+ (botão central)** | Lança um gasto ou ganho em segundos: à vista, **parcelado / promissória** (gera todas as parcelas) ou **todo mês** (conta fixa). |
 | **Lançamentos** | Histórico completo com busca e filtros por período, tipo, categoria, forma de pagamento e situação (pago/pendente). |
-| **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
+| **Contas** | **A pagar** (atrasadas, próximos 7 dias, mês, próximos meses; compras no cartão aparecem como **uma fatura**) · **Cartões** (limite usado e disponível, fatura atual, próximas faturas com as parcelas, faturas pagas, **Pagar fatura**) · **Parcelas** (cada compra parcelada com progresso, quanto falta, quitar tudo) · **Fixas** (aluguel, luz, água, internet, salário… lançadas sozinhas todo mês). |
 | **Relatórios** | **Semana, quinzena, mês, ano ou qualquer período**: destaques comparados ao período anterior ("sua conta de luz subiu 18%"), gastos por categoria e subcategoria, essencial × supérfluo, evolução, últimos 6 meses, formas de pagamento e maiores gastos. Exporta **PDF** com a marca Fynvault, **planilha Excel (.xlsx)** ou **resumo para WhatsApp**. |
+| **Cartão de crédito** | Cadastre o cartão com **dia de fechamento, vencimento e limite** (Ajustes › Formas de pagamento ou Contas › Cartões). Cada compra entra sozinha na fatura certa (no dia do fechamento ou depois, vai para a próxima); parcelado no cartão vai uma parcela por fatura. A compra **conta no mês da fatura**, mantém a categoria e é paga junto com a fatura; os lembretes avisam a fatura, não cada compra. |
 | **Reservas** | Dinheiro guardado (reserva de emergência, caixinha…): você informa quanto já tem e usa os botões **Adicionar** e **Retirar**; histórico de entradas e retiradas editável e **ajuste de saldo**. Ao lançar ou receber um ganho (salário), dá para **enviar parte para uma reserva**. O saldo das reservas fica separado de ganhos e gastos; o mês mostra "Enviado para reservas" e quanto ficou **livre**. |
 | **Metas** | Metas de economia com progresso, previsão de quando você chega lá, quanto guardar por mês para cumprir o prazo, gráfico da evolução e histórico de aportes. |
 | **Primeiro acesso** | Onboarding: perfil (nome e foto/emoji), rendas fixas, gastos fixos (com modelos prontos; fixos ou variáveis) e meta de economia. |
@@ -197,6 +198,9 @@ npx cap open android    # abre no Android Studio
 - **LGPD:** textos em `src/lib/legal.ts` (trocar `LEGAL_VERSION` pede novo aceite; o aceite fica em `user_metadata`).
   A exclusão de conta apaga os arquivos pela API do Storage e chama `delete_my_account` (migration 0005), que apaga
   só a conta de quem está logado; as tabelas vão junto por `on delete cascade`.
+- **Cartão de crédito:** migration 0007. A compra no cartão guarda o vencimento da fatura em `date` (por isso conta no mês
+  da fatura) e o dia da compra em `purchase_date`; a fatura não é tabela, é o grupo de compras do cartão com o mesmo
+  vencimento. Regras em `src/lib/cards.ts` (testadas). Pagar a fatura marca as compras dela como pagas.
 - **Reservas:** são linhas de `savings_goals` sem valor-alvo; entradas e retiradas ficam em `goal_contributions` (negativo =
   retirada; `kind` = `initial`/`adjust` não conta como dinheiro do mês). Regras em `src/lib/reserves.ts` (testadas). Precisa da
   migration 0006; sem ela o app mostra um aviso (consulta `app_schema_version()`).
