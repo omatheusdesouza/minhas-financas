@@ -34,6 +34,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_TARGET: android
         run: |
           if [ -z "$VITE_SUPABASE_URL" ]; then
             echo "::warning::Secrets do Supabase não configurados — o APK vai abrir em modo demonstração."

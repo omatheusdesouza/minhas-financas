@@ -3,6 +3,7 @@ import { Field, Segmented } from '../components/Fields'
 import { AcceptBox, LegalLinks } from '../components/Legal'
 import { api } from '../lib/api'
 import { LEGAL_VERSION } from '../lib/legal'
+import { passwordProblem } from '../lib/security'
 
 type Mode = 'login' | 'signup' | 'forgot' | 'code' | 'newpass'
 
@@ -26,7 +27,8 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
     setError('')
     setInfo('')
     if ((mode === 'signup' || mode === 'newpass') && password !== password2) return setError('As senhas não conferem.')
-    if ((mode === 'signup' || mode === 'newpass') && password.length < 8) return setError('A senha precisa ter pelo menos 8 caracteres.')
+    const weak = (mode === 'signup' || mode === 'newpass') && api.mode === 'cloud' ? passwordProblem(password) : null
+    if (weak) return setError(weak)
     if (mode === 'signup' && !accepted) return setError('Para criar a conta, leia e aceite os Termos de Uso e a Política de Privacidade.')
     setBusy(true)
     try {
