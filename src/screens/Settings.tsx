@@ -103,14 +103,14 @@ function PasswordSheet({ onClose }: { onClose: () => void }) {
   const { run } = useApp()
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
-  const valid = pw.length >= 6 && pw === pw2
+  const valid = pw.length >= 8 && pw === pw2
   return (
     <Sheet title="Trocar senha" onClose={onClose} footer={
       <button className="btn primary grow" disabled={!valid} onClick={async () => {
         if (await run(() => api.updatePassword(pw).then(() => true), 'Senha alterada')) onClose()
       }}>Salvar</button>
     }>
-      <Field label="Nova senha" hint="Mínimo de 6 caracteres"><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></Field>
+      <Field label="Nova senha" hint="Mínimo de 8 caracteres"><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></Field>
       <Field label="Repita a nova senha"><input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" /></Field>
       {pw2 && pw !== pw2 && <p className="bad-text small">As senhas não conferem.</p>}
     </Sheet>

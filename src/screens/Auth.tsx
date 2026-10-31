@@ -26,7 +26,7 @@ export function Auth({ recovering, onRecoveryStart, onRecovered }: {
     setError('')
     setInfo('')
     if ((mode === 'signup' || mode === 'newpass') && password !== password2) return setError('As senhas não conferem.')
-    if ((mode === 'signup' || mode === 'newpass') && password.length < 6) return setError('A senha precisa ter pelo menos 6 caracteres.')
+    if ((mode === 'signup' || mode === 'newpass') && password.length < 8) return setError('A senha precisa ter pelo menos 8 caracteres.')
     if (mode === 'signup' && !accepted) return setError('Para criar a conta, leia e aceite os Termos de Uso e a Política de Privacidade.')
     setBusy(true)
     try {
