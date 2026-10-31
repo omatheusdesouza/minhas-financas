@@ -25,6 +25,7 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | RLS em todas as tabelas, buckets privados, sem segredos no repositório | Pronto |
 | Layout para computador (menu lateral, colunas, atalhos de teclado) | Pronto |
 | Reservas (adicionar, retirar, ajustar, enviar parte do salário; relatório "Enviado para reservas") | Pronto (migration 0006 aplicada) |
+| Dependências atualizadas (segurança), CI em Node 22, backup semanal criptografado e suporte à chave privada do Android | Pronto (backup e chave privada dependem de secrets no GitHub) |
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
 | README atualizado, 71 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |

@@ -52,7 +52,8 @@ Você vai precisar de duas contas gratuitas: **Supabase** (onde ficam seus dados
    <h2>Recuperar senha</h2>
    <p>Seu código para criar uma nova senha no Fynvault é: <b>{{ .Token }}</b></p>
    ```
-6. *(Opcional, deixa mais simples)* Em **Authentication › Sign In / Providers › Email**, desligue **Confirm email**. Assim a conta já funciona na hora, sem precisar abrir o link de confirmação.
+6. Em **Authentication › Sign In / Providers › Email**, deixe **Confirm email** ligado (recomendado: como o site é público,
+   evita que alguém crie conta com o e-mail de outra pessoa) e veja também a seção **5. Segurança e backup**.
 7. Vá em **Project Settings › API** (ou **Data API**) e anote:
    - **Project URL** (algo como `https://abcdxyz.supabase.co`)
    - **anon public key** (um texto longo começando com `eyJ...`)
@@ -112,6 +113,37 @@ A Apple só permite instalar apps no iPhone por meio dela. Há dois caminhos:
 - **Com o Apple Developer Program (US$ 99/ano):** permite distribuir pelo **TestFlight** (instala como um app normal, sem expirar a cada 7 dias) ou publicar na App Store. Serviços como o Codemagic compilam sem precisar de um Mac.
 
 ---
+
+### 5. Segurança e backup (recomendado)
+
+**No Supabase (Authentication):**
+
+- **Sign In / Providers › Email:** **Confirm email** ligado; **Minimum password length** = 8; em **Password requirements**,
+  escolha letras e números. O app já pede no mínimo 8 caracteres.
+- **Leaked password protection** (bloqueia senhas que já vazaram na internet): disponível a partir do plano Pro.
+- **Rate limits:** os limites padrão de cadastro e login já protegem contra tentativas em massa.
+
+**Chave privada do Android** (o `android/app/debug.keystore` é público: qualquer pessoa poderia assinar um APK com ele):
+
+1. Num computador com Java, gere a chave (guarde o arquivo e as senhas num lugar seguro: sem eles não dá para
+   atualizar o app):
+   ```bash
+   keytool -genkeypair -v -keystore fynvault-release.jks -alias fynvault -keyalg RSA -keysize 4096 -validity 10000
+   ```
+2. Converta para texto: `base64 -w0 fynvault-release.jks` (Linux/Mac) ou, no PowerShell,
+   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("fynvault-release.jks"))`.
+3. Em **Settings › Secrets and variables › Actions**, crie `ANDROID_KEYSTORE_BASE64` (o texto), `ANDROID_KEYSTORE_PASSWORD`,
+   `ANDROID_KEY_ALIAS` (`fynvault`) e `ANDROID_KEY_PASSWORD`. O próximo APK já sai assinado com a chave privada.
+4. **Uma única vez**, desinstale o Fynvault do celular antes de instalar esse APK (o Android não deixa trocar a assinatura
+   por cima). Os dados estão na nuvem; só o PIN do aparelho precisa ser criado de novo.
+
+**Backup automático do banco** (workflow `backup.yml`, toda segunda-feira, criptografado, guardado por 30 dias):
+
+1. No Supabase, clique em **Connect** › **Session pooler** e copie a URI (troque `[YOUR-PASSWORD]` pela senha do banco).
+2. Crie os secrets `SUPABASE_DB_URL` (essa URI) e `BACKUP_PASSPHRASE` (uma frase longa só sua: **sem ela o backup não abre**).
+3. Para testar, em **Actions › Backup do banco › Run workflow**. O arquivo aparece em *Artifacts* no fim da execução.
+4. Para abrir: `gpg -d fynvault-AAAA-MM-DD.sql.gz.gpg | gunzip > backup.sql` (pede a frase). O backup traz as tabelas, os
+   dados e as contas de login; fotos e comprovantes (Storage) não entram.
 
 ## Identidade visual
 
