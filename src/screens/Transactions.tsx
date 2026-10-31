@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Segmented } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod, type PeriodState } from '../components/PeriodPicker'
@@ -15,7 +15,7 @@ type KindFilter = 'all' | 'expense' | 'income'
 type StatusFilter = 'all' | 'paid' | 'pending'
 
 export function Transactions() {
-  const { idx, paymentMethods } = useApp()
+  const { idx, paymentMethods, canEdit } = useApp()
   const [params] = useSearchParams()
   const [p, setP] = useState<PeriodState>(() => {
     const from = params.get('from')
@@ -59,7 +59,8 @@ export function Transactions() {
 
   return (
     <div className="screen narrow">
-      <header className="top"><h1>Lançamentos</h1></header>
+      <header className="top"><h1>Lançamentos</h1>
+        {canEdit && <Link to="/lancamentos/importar" className="btn ghost import-link"><Icon name="download" size={18} /> Importar extrato</Link>}</header>
       <PeriodPicker value={p} onChange={setP} />
 
       <div className="search-row">

@@ -16,6 +16,7 @@ import { Bills } from './screens/Bills'
 import { FamilyScreen } from './screens/Family'
 import { GoalDetailScreen, GoalsScreen } from './screens/Goals'
 import { Home } from './screens/Home'
+import { ImportScreen } from './screens/Import'
 import { Onboarding } from './screens/Onboarding'
 import { Reports } from './screens/Reports'
 import { ReserveDetailScreen, ReservesScreen } from './screens/Reserves'
@@ -109,6 +110,7 @@ function Shell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/lancamentos" element={<Transactions />} />
+          <Route path="/lancamentos/importar" element={<ImportScreen />} />
           <Route path="/contas" element={<Bills />} />
           <Route path="/relatorios" element={<Reports />} />
           <Route path="/ajustes" element={<Settings />} />
