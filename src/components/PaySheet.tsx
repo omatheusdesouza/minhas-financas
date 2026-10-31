@@ -10,6 +10,7 @@ import { Field, MoneyInput, Toggle } from './Fields'
 import { Icon } from './Icon'
 import { ReserveSplit, emptySplit, sendToReserve, splitError, type SplitValue } from './ReserveSheets'
 import { Sheet } from './Sheet'
+import { useBudgetWatch } from './useBudgetWatch'
 
 /**
  * Pagamento de uma conta: confirma o valor (obrigatório nas variáveis), a data e,
@@ -17,6 +18,7 @@ import { Sheet } from './Sheet'
  */
 export function PaySheet({ tx, onClose }: { tx: Transaction; onClose: () => void }) {
   const { run, idx } = useApp()
+  const watchBudget = useBudgetWatch()
   const variable = needsAmount(tx)
   const [amount, setAmountStr] = useState(moneyInput(tx.amount))
   const [payNow, setPayNow] = useState(!variable)
@@ -34,7 +36,7 @@ export function PaySheet({ tx, onClose }: { tx: Transaction; onClose: () => void
   async function save() {
     if (!valid || busy) return
     setBusy(true)
-    const ok = await run(async () => {
+    const ok = await watchBudget(income ? [] : [tx.date], () => run(async () => {
       if (!payNow) {
         await setAmount(tx, value)
         return true
@@ -44,7 +46,7 @@ export function PaySheet({ tx, onClose }: { tx: Transaction; onClose: () => void
       await markPaid(tx, { amount: value, paidAt, receiptPath })
       if (income) await sendToReserve(split, paidAt, tx.description || idx.label(tx.category_id))
       return true
-    }, payNow ? (income ? 'Marcado como recebido' : 'Conta paga ✓') : 'Valor informado')
+    }, payNow ? (income ? 'Marcado como recebido' : 'Conta paga ✓') : 'Valor informado'))
     setBusy(false)
     if (ok) onClose()
   }

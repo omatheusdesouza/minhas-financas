@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CategorySelect, Field, PaymentSelect } from '../components/Fields'
 import { Icon } from '../components/Icon'
+import { useBudgetWatch } from '../components/useBudgetWatch'
 import { api } from '../lib/api'
 import { invoiceFor, isCard } from '../lib/cards'
 import { addDays, fmt, today } from '../lib/dates'
@@ -15,6 +16,7 @@ import { useApp } from '../store'
 /** Lançamentos › Importar extrato: OFX ou CSV do banco, com prévia antes de salvar. */
 export function ImportScreen() {
   const { idx, paymentMethods, run, toast, canEdit, bump } = useApp()
+  const watchBudget = useBudgetWatch()
   const nav = useNavigate()
   const input = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState('')
@@ -84,7 +86,8 @@ export function ImportScreen() {
   async function save() {
     if (!chosen.length || busy) return
     setBusy('Importando…')
-    const ok = await run(async () => {
+    const affected = chosen.filter((i) => i.kind === 'expense').map((i) => (card ? invoiceFor(card, i.date).due : i.date))
+    const ok = await watchBudget(affected, () => run(async () => {
       for (const [n, it] of chosen.entries()) {
         setBusy(`Importando ${n + 1} de ${chosen.length}…`)
         if (it.status === 'settle' && it.settleId) {
@@ -105,7 +108,7 @@ export function ImportScreen() {
         }
       }
       return true
-    })
+    }))
     setBusy(null)
     if (ok) {
       bump()

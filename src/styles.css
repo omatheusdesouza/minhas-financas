@@ -769,3 +769,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   .import-main select { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 }
 @media (min-width: 1024px) { .import-top, .import-meta { grid-column: 1; } }
+
+/* ---------- Alertas de limite ---------- */
+.toast.warn { background: #F6E3B0; color: #0B2A3C; border: 1px solid var(--gold); white-space: pre-line; }
+.budget-alert { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); gap: 10px; }
+.budget-alert.over { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.budget-row { display: flex; flex-direction: column; gap: 4px; color: inherit; }
+.budget-row .factor-top { font-size: 14px; }
+button.goal-empty { text-align: left; font: inherit; color: inherit; width: 100%; }

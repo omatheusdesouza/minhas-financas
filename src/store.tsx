@@ -8,7 +8,7 @@ import type { Category, PaymentMethod, Profile, Space, Transaction } from './lib
 interface Toast {
   id: number
   text: string
-  kind: 'ok' | 'error'
+  kind: 'ok' | 'error' | 'warn'
 }
 
 export type EditorMode = 'single' | 'installments' | 'recurring'
@@ -121,7 +121,7 @@ export function AppProvider({ user, children, onboarding }: {
   const toast = useCallback((text: string, kind: Toast['kind'] = 'ok') => {
     const id = Date.now() + Math.random()
     setToasts([{ id, text, kind }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === 'error' ? 5000 : 2500)
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === 'ok' ? 2500 : 6000)
   }, [])
 
   const reloadMeta = useCallback(async () => {

@@ -13,6 +13,7 @@ import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } f
 import { Icon } from './Icon'
 import { ReserveSplit, emptySplit, sendToReserve, splitError, type SplitValue } from './ReserveSheets'
 import { Sheet } from './Sheet'
+import { useBudgetWatch } from './useBudgetWatch'
 
 type Mode = EditorMode
 
@@ -24,6 +25,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
 }) {
   const { run, idx, canEdit, paymentMethods } = useApp()
   const { data: cardsOk } = useLoad(cardsAvailable, [])
+  const watchBudget = useBudgetWatch()
   const editing = Boolean(initial?.id)
   const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense')
   const [amount, setAmount] = useState(moneyInput(initial?.amount))
@@ -73,7 +75,9 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
     if (!valid || saving) return
     setSaving(true)
     const desc = description.trim() || idx.get(categoryId)?.name || ''
-    const ok = await run(async () => {
+    // avisa se o gasto fizer alguma categoria passar de 80% ou 100% do limite do mês
+    const affected = kind === 'expense' ? (preview.length ? preview.slice(0, 3).map((p) => p.date) : [invoice ? invoice.due : date]) : []
+    const ok = await watchBudget(affected, () => run(async () => {
       if (mode === 'installments') {
         await api.createPlan({
           description: desc, creditor: creditor.trim() || null, category_id: categoryId,
@@ -111,7 +115,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         if (canSplit) await sendToReserve(split, date, desc)
       }
       return true
-    }, editing ? 'Lançamento atualizado' : mode === 'installments' ? `${n} parcelas criadas` : 'Lançamento salvo')
+    }, editing ? 'Lançamento atualizado' : mode === 'installments' ? `${n} parcelas criadas` : 'Lançamento salvo'))
     setSaving(false)
     if (ok) onClose()
   }

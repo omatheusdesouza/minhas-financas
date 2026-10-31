@@ -15,6 +15,7 @@ import { api } from '../lib/api'
 import { addDays, fmt, previousPeriod, today } from '../lib/dates'
 import { compareSpending, insights } from '../lib/compare'
 import { money, pct } from '../lib/format'
+import { budgetStatus } from '../lib/budgets'
 import { computeHealth } from '../lib/health'
 import { isGoal, isReserve, reserveFlow, type Goal } from '../lib/reserves'
 import { byCategory, sumBy } from '../lib/services'
@@ -79,9 +80,10 @@ export function Home() {
     const budgets = new Map<string, number>()
     for (const c of idx.roots('expense')) if (c.monthly_budget) budgets.set(c.id, c.monthly_budget)
     const health = computeHealth({ month, overdue, futureInstallments: plans, idx })
+    const alerts = budgetStatus(month, idx).filter((s) => s.level !== 'ok')
     return {
       month, income, expense, realized, pendingAmounts, fixedIncome, fixedExpense, variableNoEstimate, hasVariable,
-      reserves, goal, saved, otherGoals: activeGoals.length - 1, highlights, prevLabel: fmt.month(prevFrom), upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
+      alerts, reserves, goal, saved, otherGoals: activeGoals.length - 1, highlights, prevLabel: fmt.month(prevFrom), upcoming, overdue, slices, budgets, health, spent: sumBy(month, 'expense'),
     }
   }, [data, idx, from, to])
 
@@ -172,6 +174,23 @@ export function Home() {
               </section>
             </div>
             <div className="dash-side">
+              {view.alerts.length > 0 && (
+                <section className={`card budget-alert o-2 ${view.alerts.some((a) => a.level === 'over') ? 'over' : ''}`}>
+                  <div className="card-title"><h3>⚠️ Atenção aos limites</h3><Link to="/ajustes/categorias" className="link">Limites</Link></div>
+                  {view.alerts.map((a) => (
+                    <Link key={a.category.id} to={`/lancamentos?cat=${a.category.id}&from=${from}&to=${to}`} className="budget-row">
+                      <span className="factor-top">
+                        <span>{a.category.icon} {a.category.name}</span>
+                        <span className={a.level === 'over' ? 'bad-text' : 'warn-text'}>{pct(a.ratio)}</span>
+                      </span>
+                      <span className="bar"><span style={{ width: `${Math.min(100, a.ratio * 100)}%`, background: a.level === 'over' ? 'var(--bad)' : 'var(--warn)' }} /></span>
+                      <span className="muted small">
+                        {money(a.spent)} de {money(a.limit)} · {a.spent > a.limit ? `estourou ${money(a.spent - a.limit)}` : `resta ${money(a.limit - a.spent)}`}
+                      </span>
+                    </Link>
+                  ))}
+                </section>
+              )}
               <section className="card health o-7" onClick={() => setShowHealth((v) => !v)}>
                 <div className="health-head">
                   <ScoreRing score={view.health.score} color={view.health.color} />
