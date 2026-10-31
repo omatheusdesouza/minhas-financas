@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
-import { startOfMonth, today } from '../lib/dates'
+import { invoiceFor, isCard, nextInvoiceDue } from '../lib/cards'
+import { cardsAvailable } from '../lib/features'
+import { fmt, startOfMonth, today } from '../lib/dates'
 import { money, moneyInput, parseMoney } from '../lib/format'
 import { prepareUpload } from '../lib/images'
 import { splitInstallments } from '../lib/installments'
 import { generateRecurring } from '../lib/services'
 import type { AmountType, Kind, Transaction } from '../lib/types'
-import { useApp, type EditorMode } from '../store'
+import { useApp, useLoad, type EditorMode } from '../store'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from './Fields'
 import { Icon } from './Icon'
 import { ReserveSplit, emptySplit, sendToReserve, splitError, type SplitValue } from './ReserveSheets'
@@ -20,12 +22,14 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
   initialMode?: Mode
   onClose: () => void
 }) {
-  const { run, idx, canEdit } = useApp()
+  const { run, idx, canEdit, paymentMethods } = useApp()
+  const { data: cardsOk } = useLoad(cardsAvailable, [])
   const editing = Boolean(initial?.id)
   const [kind, setKind] = useState<Kind>(initial?.kind ?? 'expense')
   const [amount, setAmount] = useState(moneyInput(initial?.amount))
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [date, setDate] = useState(initial?.date ?? today())
+  // compra no cartão: o campo mostra o dia da compra (o `date` salvo é o vencimento da fatura)
+  const [date, setDate] = useState(initial?.purchase_date ?? initial?.date ?? today())
   const [categoryId, setCategoryId] = useState<string | null>(initial?.category_id ?? null)
   const [paymentId, setPaymentId] = useState<string | null>(initial?.payment_method_id ?? null)
   const [paid, setPaid] = useState(initial?.paid ?? initialMode === 'single')
@@ -46,6 +50,11 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
   }, [receipt])
 
   const value = parseMoney(amount)
+  const pm = paymentMethods.find((m) => m.id === paymentId)
+  const card = cardsOk && kind === 'expense' && mode !== 'recurring' && isCard(pm) ? pm : null
+  // parcela de compra no cartão: fica na fatura dela (o dia da compra é o mesmo em todas)
+  const cardInstallment = Boolean(card && editing && initial?.installment_plan_id && initial?.purchase_date)
+  const invoice = card ? (cardInstallment ? { due: initial!.date!, closing: '' } : invoiceFor(card, date)) : null
   const n = Math.max(1, Math.min(120, parseInt(count) || 1))
   // Sem valor só é permitido em conta variável (todo mês) ou lançamento ainda não pago
   const amountOk = value > 0 || (!amount.trim() && ((mode === 'recurring' && amountType === 'variable') || (editing && !paid)))
@@ -68,8 +77,9 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
       if (mode === 'installments') {
         await api.createPlan({
           description: desc, creditor: creditor.trim() || null, category_id: categoryId,
-          payment_method_id: paymentId, total_amount: value, installments: n, first_due: date,
-          notes: notes.trim() || null, first_paid: paid,
+          payment_method_id: paymentId, total_amount: value, installments: n, first_due: invoice ? invoice.due : date,
+          notes: notes.trim() || null, first_paid: card ? false : paid,
+          ...(card ? { card: { purchase_date: date, due_day: card.due_day } } : {}),
         })
       } else if (mode === 'recurring') {
         const bill = await api.saveRecurring({
@@ -80,11 +90,14 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         })
         await generateRecurring([bill])
       } else {
+        // no cartão: data = vencimento da fatura e só fica paga quando a fatura for paga
+        const cardPaid = initial?.paid ?? false
         await api.saveTransaction({
           ...(initial as Transaction | undefined),
-          kind, amount: value > 0 ? value : null, description: desc, date, category_id: categoryId,
-          payment_method_id: paymentId, paid,
-          paid_at: paid ? (initial?.paid_at ?? date) : null,
+          kind, amount: value > 0 ? value : null, description: desc, date: invoice ? invoice.due : date, category_id: categoryId,
+          payment_method_id: paymentId, paid: card ? cardPaid : paid,
+          paid_at: (card ? cardPaid : paid) ? (initial?.paid_at ?? date) : null,
+          ...(card ? { purchase_date: date } : initial?.purchase_date ? { purchase_date: null } : {}),
           notes: notes.trim() || null,
           installment_plan_id: initial?.installment_plan_id ?? null,
           installment_number: initial?.installment_number ?? null,
@@ -119,7 +132,9 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
 
   const future = date > today()
   const paidLabel = kind === 'expense' ? (future ? 'Já está pago' : 'Pago') : future ? 'Já recebido' : 'Recebido'
-  const preview = mode === 'installments' && value > 0 ? splitInstallments(value, n, date) : []
+  const preview = mode === 'installments' && value > 0
+    ? splitInstallments(value, n, invoice ? invoice.due : date).map((p, i) => (card && invoice ? { ...p, date: nextInvoiceDue(card, invoice.due, i) } : p))
+    : []
 
   return (
     <Sheet
@@ -167,8 +182,8 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
       </Field>
 
       <div className="row2">
-        <Field label={mode === 'installments' ? '1º vencimento' : mode === 'recurring' ? 'Primeiro mês / dia' : 'Data'}>
-          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        <Field label={card ? 'Data da compra' : mode === 'installments' ? '1º vencimento' : mode === 'recurring' ? 'Primeiro mês / dia' : 'Data'}>
+          <input type="date" value={date} disabled={cardInstallment} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </Field>
         <Field label="Forma de pagamento">
           <PaymentSelect value={paymentId} onChange={setPaymentId} />
@@ -223,7 +238,16 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
           {amountType === 'variable' && kind === 'expense' && ' Você informa o valor de cada mês quando a conta chegar.'}</p>
       )}
 
-      {mode !== 'recurring' && (
+      {card && invoice && (
+        <p className="note card-note">
+          💳 {mode === 'installments' && preview.length > 1
+            ? <>1ª parcela na fatura que vence em <b>{fmt.day(preview[0].date)}</b>, última em {fmt.day(preview[preview.length - 1].date)}.</>
+            : <>Entra na fatura do {card.name} que vence em <b>{fmt.day(invoice.due)}</b>{invoice.closing && ` (fecha ${fmt.day(invoice.closing)})`}.</>}
+          {' '}Conta no mês da fatura e é paga junto com ela.
+        </p>
+      )}
+
+      {mode !== 'recurring' && !card && (
         <Toggle
           checked={paid} onChange={setPaid}
           label={mode === 'installments' ? '1ª parcela já paga' : paidLabel}

@@ -1,3 +1,4 @@
+import { nextInvoiceDue } from './cards'
 import type { Backend } from './backend'
 import { splitInstallments } from './installments'
 import type { TableName, Tables } from './tables'
@@ -133,12 +134,15 @@ export function createLocalData(
       return rows<InstallmentPlan>('installment_plans').sort((a, b) => (a.first_due < b.first_due ? 1 : -1))
     },
     async createPlan(p) {
-      const { first_paid, ...meta } = p
+      const { first_paid, card, ...meta } = p
       const plan = await upsert('installment_plans', meta)
       const parts: Transaction[] = splitInstallments(p.total_amount, p.installments, p.first_due).map((part) => {
-        const paid = part.number === 1 && first_paid
+        // no cartão, a parcela n cai na fatura n e só é paga junto com a fatura
+        const paid = !card && part.number === 1 && first_paid
+        const date = card ? nextInvoiceDue(card, p.first_due, part.number - 1) : part.date
         return stamp({
-          id: uid(), user_id: plan.user_id, kind: 'expense', amount: part.amount, date: part.date,
+          ...(card ? { purchase_date: card.purchase_date } : {}),
+          id: uid(), user_id: plan.user_id, kind: 'expense', amount: part.amount, date,
           description: `${p.description} (${part.number}/${p.installments})`,
           category_id: p.category_id, payment_method_id: p.payment_method_id,
           paid, paid_at: paid ? part.date : null, notes: null,

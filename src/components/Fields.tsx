@@ -62,7 +62,7 @@ export function PaymentSelect({ value, onChange }: { value: string | null; onCha
     <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">Não informado</option>
       {paymentMethods.filter((p) => !p.archived || p.id === value).map((p) => (
-        <option key={p.id} value={p.id}>{p.name}</option>
+        <option key={p.id} value={p.id}>{p.type === 'credit_card' ? '💳 ' : ''}{p.name}</option>
       ))}
     </select>
   )

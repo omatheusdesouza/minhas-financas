@@ -13,6 +13,7 @@ const num = (v: unknown) => (v == null ? null : Number(v))
 /** Colunas numeric chegam como texto em alguns casos: normaliza para número. */
 const NUMERIC: Partial<Record<TableName, string[]>> = {
   transactions: ['amount'],
+  payment_methods: ['credit_limit'],
   recurring_bills: ['amount'],
   installment_plans: ['total_amount'],
   categories: ['monthly_budget'],

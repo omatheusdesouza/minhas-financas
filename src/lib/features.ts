@@ -1,14 +1,20 @@
 import { api } from './api'
 
-let reserves: Promise<boolean> | null = null
+const known = new Map<string, Promise<boolean>>()
 
 /**
- * O banco já aceita reservas e retiradas (migration 0006)? Guarda só a resposta "sim":
- * enquanto for "não", consulta de novo a cada tela (a migration pode ter sido rodada com o app aberto).
+ * O banco já tem a migration `version`? Guarda só a resposta "sim": enquanto for "não", consulta de novo
+ * a cada tela (a migration pode ter sido rodada com o app aberto).
  */
-export function reservesAvailable(): Promise<boolean> {
-  if (reserves) return reserves
-  const check = api.schemaVersion().then((v) => (v ?? '') >= '0006').catch(() => false)
-  check.then((ok) => { if (ok) reserves = check })
+function schemaAtLeast(version: string): Promise<boolean> {
+  const cached = known.get(version)
+  if (cached) return cached
+  const check = api.schemaVersion().then((v) => (v ?? '') >= version).catch(() => false)
+  check.then((ok) => { if (ok) known.set(version, check) })
   return check
 }
+
+/** Reservas e retiradas (migration 0006). */
+export const reservesAvailable = () => schemaAtLeast('0006')
+/** Cartão de crédito com fatura (migration 0007). */
+export const cardsAvailable = () => schemaAtLeast('0007')

@@ -12,7 +12,9 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
   const root = idx.root(t.category_id)
   const pm = paymentMethods.find((p) => p.id === t.payment_method_id)
   const sign = t.kind === 'expense' ? '−' : '+'
-  const due = t.paid ? null : dueStatus(t)
+  // compra no cartão: mostra o dia da compra e a fatura; é paga junto com a fatura
+  const onCard = Boolean(t.purchase_date && pm?.type === 'credit_card')
+  const due = t.paid || onCard ? null : dueStatus(t)
   const missing = needsAmount(t)
 
   return (
@@ -24,9 +26,9 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
         <span className="tx-text">
           <span className="tx-desc">{t.description || idx.label(t.category_id)}</span>
           <span className="tx-meta">
-            {showDate && <>{fmt.short(t.date)} · </>}
+            {showDate && <>{fmt.short(onCard ? t.purchase_date! : t.date)} · </>}
             {idx.label(t.category_id)}
-            {pm && <> · {pm.name}</>}
+            {pm && <> · {onCard ? '💳 ' : ''}{pm.name}</>}
             {t.recurring_bill_id && <> · 🔁</>}
             {t.receipt_path && <> · 📎</>}
           </span>
@@ -35,6 +37,7 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
           {missing
             ? <span className="tx-amount muted">valor a informar</span>
             : <span className={`tx-amount ${t.kind === 'expense' ? 'neg' : 'pos'}`}>{sign} {money(t.amount ?? 0)}</span>}
+          {onCard && <span className={`chip ${t.paid ? 'good' : ''}`}>{t.paid ? 'Fatura paga' : `Fatura ${fmt.short(t.date)}`}</span>}
           {due && (
             <span className={`chip ${due.tone}`}>
               {t.kind === 'income' ? (due.days < 0 ? 'Atrasado' : 'A receber') : due.label}
@@ -42,7 +45,7 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
           )}
         </span>
       </button>
-      {!t.paid && canEdit && (
+      {!t.paid && canEdit && !onCard && (
         missing ? (
           <button className="btn ghost sm-btn" onClick={() => openPay(t)}>Informar</button>
         ) : (

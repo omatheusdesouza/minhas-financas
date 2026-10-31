@@ -5,6 +5,7 @@ import { CATEGORY_COLORS, CATEGORY_ICONS, LEGACY_COLOR_MAP } from '../lib/defaul
 import { MyAvatar } from '../components/Avatar'
 import { Field, MoneyInput, Segmented, Toggle } from '../components/Fields'
 import { ProfileForm, draftFrom, nameError, saveProfileDraft } from '../components/ProfileForm'
+import { PaymentMethodSheet } from '../components/PaymentMethodSheet'
 import { PrivacySettings } from '../components/PrivacySettings'
 import { ReminderSettings } from '../components/Reminders'
 import { SecuritySettings } from '../components/SecuritySettings'
@@ -284,46 +285,32 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
 }
 
 export function PaymentMethodsScreen() {
-  const { paymentMethods, run, reloadMeta, canEdit } = useApp()
+  const { paymentMethods, canEdit } = useApp()
   const [editing, setEditing] = useState<Partial<PaymentMethod> | null>(null)
-  const [name, setName] = useState('')
-
-  async function save() {
-    if (!editing || !name.trim()) return
-    const ok = await run(async () => {
-      await api.savePaymentMethod({ ...(editing as PaymentMethod), name: name.trim(), archived: editing.archived ?? false })
-      await reloadMeta()
-      return true
-    }, 'Forma de pagamento salva')
-    if (ok) setEditing(null)
-  }
 
   return (
     <div className="screen narrow">
       <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Formas de pagamento</h1><span /></header>
-      {canEdit && <button className="btn primary block" onClick={() => { setEditing({}); setName('') }}><Icon name="plus" /> Nova forma de pagamento</button>}
-      <p className="muted small">Ex.: Cartão Nubank, Cartão Itaú, Pix, Dinheiro, Promissória da loja X…</p>
+      {canEdit && <button className="btn primary block" onClick={() => setEditing({})}><Icon name="plus" /> Nova forma de pagamento</button>}
+      <p className="muted small">Ex.: Cartão Nubank, Cartão Itaú, Pix, Dinheiro, Promissória da loja X… Cartões de crédito podem ter fechamento e vencimento da fatura.</p>
       <div className="card flush">
         {paymentMethods.map((m) => (
-          <button key={m.id} className={`tx-main list-btn ${m.archived ? 'dim' : ''}`} disabled={!canEdit} onClick={() => { setEditing(m); setName(m.name) }}>
-            <span className="tx-icon"><Icon name="card" /></span>
-            <span className="tx-text"><span className="tx-desc">{m.name}</span>{m.archived && <span className="tx-meta">arquivada</span>}</span>
+          <button key={m.id} className={`tx-main list-btn ${m.archived ? 'dim' : ''}`} disabled={!canEdit} onClick={() => setEditing(m)}>
+            <span className="tx-icon">{m.type === 'credit_card' ? '💳' : <Icon name="card" />}</span>
+            <span className="tx-text">
+              <span className="tx-desc">{m.name}</span>
+              {(m.type === 'credit_card' || m.archived) && (
+                <span className="tx-meta">
+                  {m.type === 'credit_card' && `Cartão · fecha dia ${m.closing_day} · vence dia ${m.due_day}`}
+                  {m.archived && `${m.type === 'credit_card' ? ' · ' : ''}arquivada`}
+                </span>
+              )}
+            </span>
             <Icon name="edit" size={16} />
           </button>
         ))}
       </div>
-      {editing && (
-        <Sheet title={editing.id ? 'Editar forma de pagamento' : 'Nova forma de pagamento'} onClose={() => setEditing(null)} footer={<>
-          {editing.id && <button className="btn danger ghost" onClick={async () => {
-            if (!confirm(`Excluir "${editing.name}"?`)) return
-            if (await run(async () => { await api.deletePaymentMethod(editing.id!); await reloadMeta(); return true }, 'Excluída')) setEditing(null)
-          }}>Excluir</button>}
-          <button className="btn primary grow" disabled={!name.trim()} onClick={save}>Salvar</button>
-        </>}>
-          <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={40} /></Field>
-          {editing.id && <Toggle checked={editing.archived ?? false} onChange={(v) => setEditing({ ...editing, archived: v })} label="Arquivada" />}
-        </Sheet>
-      )}
+      {editing && <PaymentMethodSheet method={editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }

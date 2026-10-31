@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { cardMap, invoicesAsBills, splitCardPurchases } from './cards'
 import { api } from './api'
 import { addDays, today } from './dates'
 import { DEFAULT_HORIZON, buildSchedule } from './reminders'
@@ -99,11 +100,15 @@ async function doSync(): Promise<number> {
   }
   if (!remindersEnabled() || (await permissionState()) !== 'granted') return 0
 
-  const [bills, goals, profile] = await Promise.all([
+  const [unpaid, goals, profile, methods] = await Promise.all([
     api.listUnpaid(addDays(today(), DEFAULT_HORIZON + 10), 'own'),
     api.listGoals('own'),
     api.getProfile(),
+    api.listPaymentMethods(),
   ])
+  // compras no cartão: um lembrete por fatura, não por compra
+  const { rest, invoices } = splitCardPurchases(unpaid, cardMap(methods), today())
+  const bills = [...rest, ...invoicesAsBills(invoices)]
   const list = buildSchedule({ bills, goals, time: profile?.reminder_time ?? '09:00', now: new Date() })
   if (!list.length) return 0
   await LocalNotifications.schedule({

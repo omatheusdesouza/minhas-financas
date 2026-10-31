@@ -20,6 +20,11 @@ export interface PaymentMethod {
   id: string
   name: string
   archived: boolean
+  /** cartão de crédito (migration 0007); ausente = forma comum */
+  type?: 'other' | 'credit_card'
+  closing_day?: number | null
+  due_day?: number | null
+  credit_limit?: number | null
 }
 
 export interface Transaction {
@@ -39,6 +44,8 @@ export interface Transaction {
   recurring_bill_id: string | null
   recurring_month: string | null
   receipt_path: string | null
+  /** compra no cartão (migration 0007): dia da compra; `date` é o vencimento da fatura */
+  purchase_date?: string | null
 }
 
 export interface InstallmentPlan {
@@ -81,6 +88,8 @@ export interface NewInstallmentPlan {
   first_due: string
   notes: string | null
   first_paid: boolean
+  /** compra parcelada no cartão: cada parcela vai para uma fatura seguida (migration 0007) */
+  card?: { purchase_date: string; due_day: number }
 }
 
 export type Draft<T extends { id: string }> = Omit<T, 'id'> & { id?: string }

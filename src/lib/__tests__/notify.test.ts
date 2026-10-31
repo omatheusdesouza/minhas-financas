@@ -23,12 +23,13 @@ vi.mock('@capacitor/local-notifications', () => ({
     checkPermissions: async () => ({ display: ln.permission }),
   },
 }))
-const data = vi.hoisted(() => ({ unpaid: [] as any[] }))
+const data = vi.hoisted(() => ({ unpaid: [] as any[], methods: [] as any[] }))
 vi.mock('../api', () => ({
   api: {
     listUnpaid: async () => data.unpaid,
     listGoals: async () => [],
     getProfile: async () => ({ reminder_time: '09:00' }),
+    listPaymentMethods: async () => data.methods,
   },
 }))
 
@@ -54,6 +55,7 @@ beforeEach(() => {
   ln.cancel.mockClear()
   ln.schedule.mockClear()
   store.clear()
+  data.methods = []
   data.unpaid = [{ id: 'a', kind: 'expense', date: future(15), paid: false, amount: null, description: 'Água' }]
 })
 
@@ -83,6 +85,20 @@ describe('agenda no celular', () => {
     await syncReminders()
     expect(ln.scheduled.some((x) => x.title.startsWith('Informe o valor'))).toBe(false)
     expect(ln.scheduled.length).toBeGreaterThan(0)
+  })
+
+  it('compras no cartão viram um lembrete só, da fatura', async () => {
+    data.methods = [{ id: 'nu', name: 'Nubank', archived: false, type: 'credit_card', closing_day: 3, due_day: 10 }]
+    const due = future(5)
+    data.unpaid = [1, 2, 3].map((i) => ({
+      id: `c${i}`, kind: 'expense', date: due, paid: false, amount: 10 * i, description: `Compra ${i}`,
+      payment_method_id: 'nu', purchase_date: future(-20),
+    }))
+    await syncReminders()
+    const titles = ln.scheduled.map((x) => x.title)
+    expect(titles.some((t) => t.includes('Fatura Nubank'))).toBe(true)
+    expect(titles.some((t) => t.includes('Compra'))).toBe(false)
+    expect(ln.scheduled.some((x) => x.body.includes('60,00'))).toBe(true)
   })
 
   it('lembretes desligados ou sem permissão: cancela tudo e não agenda', async () => {

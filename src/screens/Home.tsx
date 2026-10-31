@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MyAvatar } from '../components/Avatar'
 import { Donut, ScoreRing, SliceList } from '../components/Charts'
+import { BillRow, billItems } from '../components/Invoice'
 import { MovementSheet } from '../components/ReserveSheets'
 import { ReservesCard } from './Reserves'
 import { Icon } from '../components/Icon'
@@ -21,7 +22,7 @@ import { amt, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
 export function Home() {
-  const { idx, profile, space, canEdit } = useApp()
+  const { idx, profile, space, canEdit, paymentMethods } = useApp()
   const nav = useNavigate()
   const [p, setP] = useState(initialPeriod('mes'))
   // No computador o detalhe da saúde financeira já abre expandido
@@ -155,7 +156,7 @@ export function Home() {
                     <div className="legend">
                       <span><i className="lg good" /> Em dia</span><span><i className="lg warn" /> Perto de vencer</span><span><i className="lg bad" /> Vencida ou crítica</span>
                     </div>
-                    {view.upcoming.slice(0, 6).map((t) => <TxRow key={t.id} t={t} showDate />)}
+                    {billItems(view.upcoming, paymentMethods).slice(0, 6).map((x) => <BillRow key={x.kind === 'tx' ? x.t.id : `${x.inv.card.id}${x.inv.due}`} item={x} />)}
                   </>
                 ) : <p className="empty">Nenhuma conta a pagar nos próximos 30 dias. 🎉</p>}
               </section>

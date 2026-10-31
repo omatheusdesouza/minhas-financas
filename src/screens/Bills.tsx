@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { CardsTab } from '../components/CardsTab'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
+import { BillRow, billItems, type BillItem } from '../components/Invoice'
 import { TxRow } from '../components/TxRow'
 import { api } from '../lib/api'
 import { addDays, addMonths, endOfMonth, fmt, startOfMonth, today } from '../lib/dates'
@@ -12,20 +14,22 @@ import { INCOME_SOURCES, incomeSourceLabel, parseDay } from '../lib/templates'
 import { amt, type AmountType, type IncomeSource, type InstallmentPlan, type Kind, type RecurringBill, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
-type Tab = 'pagar' | 'parcelas' | 'fixas'
+type Tab = 'pagar' | 'cartoes' | 'parcelas' | 'fixas'
 
 export function Bills() {
   const [params] = useSearchParams()
-  const [tab, setTab] = useState<Tab>(() => (['pagar', 'parcelas', 'fixas'].includes(params.get('tab') ?? '') ? params.get('tab') as Tab : 'pagar'))
+  const [tab, setTab] = useState<Tab>(() => (['pagar', 'cartoes', 'parcelas', 'fixas'].includes(params.get('tab') ?? '') ? params.get('tab') as Tab : 'pagar'))
   return (
     <div className="screen narrow">
       <header className="top"><h1>Contas</h1></header>
       <Segmented value={tab} onChange={setTab} options={[
         { value: 'pagar', label: 'A pagar' },
+        { value: 'cartoes', label: 'Cartões' },
         { value: 'parcelas', label: 'Parcelas' },
         { value: 'fixas', label: 'Fixas' },
       ]} />
       {tab === 'pagar' && <Upcoming />}
+      {tab === 'cartoes' && <CardsTab />}
       {tab === 'parcelas' && <Plans />}
       {tab === 'fixas' && <Recurring />}
     </div>
@@ -33,25 +37,27 @@ export function Bills() {
 }
 
 function Upcoming() {
+  const { paymentMethods } = useApp()
   const { data } = useLoad(() => api.listUnpaid(addMonths(today(), 3)), [])
   const groups = useMemo(() => {
     const t = today()
     const weekEnd = addDays(t, 7)
     const monthEnd = endOfMonth(t)
-    const g: { title: string; items: Transaction[]; tone?: string }[] = [
+    const g: { title: string; items: BillItem[]; tone?: string }[] = [
       { title: 'Atrasadas', items: [], tone: 'bad' },
       { title: 'Próximos 7 dias', items: [] },
       { title: 'Até o fim do mês', items: [] },
       { title: 'Próximos meses', items: [] },
     ]
-    for (const x of data ?? []) {
+    // compras de cartão aparecem agrupadas na fatura
+    for (const x of billItems(data ?? [], paymentMethods)) {
       if (x.date < t) g[0].items.push(x)
       else if (x.date <= weekEnd) g[1].items.push(x)
       else if (x.date <= monthEnd) g[2].items.push(x)
       else g[3].items.push(x)
     }
     return g.filter((x) => x.items.length)
-  }, [data])
+  }, [data, paymentMethods])
 
   if (!data) return <div className="skeleton tall" />
   const totalOut = data.filter((t) => t.kind === 'expense').reduce((s, t) => s + amt(t), 0)
@@ -67,9 +73,9 @@ function Upcoming() {
         <section key={g.title} className="day-group">
           <div className={`day-head ${g.tone ?? ''}`}>
             <span>{g.title}</span>
-            <span className="muted small">{money(g.items.reduce((s, t) => s + (t.kind === 'expense' ? amt(t) : -amt(t)), 0))}</span>
+            <span className="muted small">{money(g.items.reduce((s, x) => s + x.amount, 0))}</span>
           </div>
-          <div className="card flush">{g.items.map((t) => <TxRow key={t.id} t={t} showDate />)}</div>
+          <div className="card flush">{g.items.map((x) => <BillRow key={x.kind === 'tx' ? x.t.id : `${x.inv.card.id}${x.inv.due}`} item={x} />)}</div>
         </section>
       ))}
     </>

@@ -730,3 +730,19 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .reserve-detail p { margin: 0; }
 .reserve-detail .goal-big { font-size: 36px; font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1; }
 .reserve-detail .link { align-self: center; }
+
+/* ---------- Cartão de crédito e faturas ---------- */
+.invoice-head { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.invoice-head > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.invoice-head strong { font-variant-numeric: tabular-nums; }
+.card-block { gap: 12px; }
+.card-block .goal-top strong { font-size: 17px; }
+.limit { display: flex; flex-direction: column; gap: 6px; }
+.pay-invoice { border-color: var(--good); color: var(--good); }
+.card-note { border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .pay-invoice:hover { background: color-mix(in srgb, var(--good) 12%, transparent); }
+}
+/* listas dentro de outro cartão ou de um painel aberto de dentro de um cartão: sem as margens negativas */
+.card .card.flush .tx-row, .sheet .card.flush .tx-row { margin: 0; padding: 0; }
+.card .card.flush .tx-row:first-of-type, .sheet .card.flush .tx-row:first-of-type { border-top: 0; }
