@@ -102,3 +102,11 @@ Cada item: **decisão** — motivo.
 - **Fatura não é tabela:** é o grupo das compras do cartão com o mesmo vencimento; pagar = marcar essas compras como pagas.
 - **Compra no dia do fechamento vai para a fatura seguinte.**
 - Fica para depois: pagamento parcial (rotativo), estorno e assinatura mensal no cartão (conta fixa paga no cartão).
+
+## Importar extrato (31/10/2026)
+
+- **OFX e CSV, sem migration:** o id de cada lançamento importado é calculado do FITID do banco (ou de data+valor+descrição),
+  então importar o mesmo arquivo de novo não duplica.
+- **Conta em aberto com o mesmo valor (até 5 dias) recebe baixa** em vez de virar lançamento novo.
+- **Pagamento de fatura, aplicações e caixinhas vêm desmarcados** (as compras do cartão e as reservas já contam).
+- **Categoria sugerida:** primeiro pelo que o usuário já usou para a mesma descrição, depois por palavras comuns (iFood, posto…).
