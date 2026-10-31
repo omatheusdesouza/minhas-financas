@@ -59,6 +59,12 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 
 ## Próximos passos (prioridade)
 
+0. **Pendente (lembrar o usuário):** o ramo `carregamento-leve` no GitHub guarda o carregamento mais leve, ainda não
+   publicado. Ele carrega as telas e o gráfico do Início sob demanda. Falta medir o tamanho, testar no navegador,
+   criar os testes de tela (Playwright) no CI e juntar ao `main`. Lembrete relacionado: o vite-plugin-pwa 1.x precisa de
+   `skipWaiting`/`clientsClaim` no `vite.config.ts` (já corrigido no `main`), senão a versão nova fica esperando até fechar
+   todas as janelas do app.
+
 1. Instalar a v1.1.10 por cima e testar offline (modo avião → lançar/pagar → voltar → "Tudo sincronizado ✓").
 2. Testar o modo família com uma segunda conta (visualizar, editar, remover).
 3. Testar PIN/biometria e a notificação de teste (Ajustes → Lembretes).
