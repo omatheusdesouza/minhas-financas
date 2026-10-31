@@ -18,7 +18,9 @@ android {
         }
     }
     // Chave fixa (debug) guardada no projeto: permite instalar atualizações por cima
-    // da versão anterior sem precisar desinstalar. Para publicar na Play Store, use uma chave própria.
+    // da versão anterior sem precisar desinstalar. Por ser pública, qualquer um poderia assinar um APK
+    // com ela; por isso o CI usa a chave PRIVADA (release) quando ela está nos secrets do GitHub.
+    def releaseStore = System.getenv("ANDROID_KEYSTORE_PATH")
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -26,12 +28,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (releaseStore) {
+            release {
+                storeFile file(releaseStore)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
+            if (releaseStore) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
