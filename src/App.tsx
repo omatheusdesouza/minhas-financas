@@ -1,5 +1,5 @@
 import { App as CapApp } from '@capacitor/app'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { TermsGate } from './components/Legal'
@@ -24,6 +24,9 @@ import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from 
 import { Transactions } from './screens/Transactions'
 import { LockProvider } from './lockContext'
 import { AppProvider, useApp } from './store'
+
+// Painel do gestor: carregado só quando aberto (quase ninguém usa)
+const AdminScreen = lazy(() => import('./screens/Admin'))
 
 export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -122,6 +125,7 @@ function Shell() {
           <Route path="/metas/:id" element={<GoalDetailScreen />} />
           <Route path="/reservas" element={<ReservesScreen />} />
           <Route path="/reservas/:id" element={<ReserveDetailScreen />} />
+          <Route path="/gestor" element={<Suspense fallback={<div className="screen"><div className="spinner" /></div>}><AdminScreen /></Suspense>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

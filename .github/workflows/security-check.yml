@@ -1,0 +1,85 @@
+name: Verificação de segurança diária
+
+# Todo dia às 07:43 (Brasília) e quando você clicar em "Run workflow".
+# 1. Procura alertas novos do painel do gestor no banco (precisa do secret SUPABASE_DB_URL, o mesmo do backup).
+# 2. Procura falhas conhecidas nas bibliotecas que o app usa (npm audit).
+# Se achar algo, abre (ou comenta) uma issue com o rótulo "seguranca" e o GitHub te avisa por e-mail.
+# O repositório é público: a issue NUNCA traz e-mails, IPs ou nomes, só a quantidade e onde olhar.
+on:
+  schedule:
+    - cron: '43 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Alertas novos no banco
+        id: alerts
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::notice::Sem o secret SUPABASE_DB_URL: os alertas do banco não são conferidos (veja o README)."
+            echo "n=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # marca como avisados os alertas abertos ainda não avisados e apaga registros com mais de 90 dias
+          out=$(docker run --rm -e DB_URL postgres:17 psql "$DB_URL" -At -v ON_ERROR_STOP=1 -c "
+            with novos as (
+              update public.security_alerts set notified_at = now()
+              where notified_at is null and resolved_at is null returning level
+            )
+            select count(*) || ' ' || count(*) filter (where level = 'critical') from novos;
+          " -c "delete from public.security_events where created_at < now() - interval '90 days';" | head -1) || {
+            echo "::warning::Não foi possível ler os alertas (a migration 0008 já foi rodada?)."; echo "n=0" >> "$GITHUB_OUTPUT"; exit 0; }
+          set -- $out
+          echo "n=${1:-0}" >> "$GITHUB_OUTPUT"
+          echo "critical=${2:-0}" >> "$GITHUB_OUTPUT"
+          echo "Alertas novos: ${1:-0} (graves: ${2:-0})"
+
+      - name: Falhas conhecidas nas bibliotecas
+        id: audit
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund >/dev/null
+          if npm audit --omit=dev --audit-level=high > audit.txt 2>&1; then
+            echo "bad=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "bad=true" >> "$GITHUB_OUTPUT"
+          fi
+          tail -n 25 audit.txt
+
+      - name: Avisar
+        if: steps.alerts.outputs.n != '0' || steps.audit.outputs.bad == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          N: ${{ steps.alerts.outputs.n }}
+          CRIT: ${{ steps.alerts.outputs.critical }}
+          AUDIT: ${{ steps.audit.outputs.bad }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create seguranca --color B60205 --description "Avisos da verificação de segurança" --force >/dev/null 2>&1 || true
+          body="Verificação de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"$'\n\n'
+          if [ "$N" != "0" ]; then
+            body+="- **${N} alerta(s) novo(s)** no app (${CRIT} grave(s)). Abra o Fynvault › **Painel do gestor › Alertas** para ver os detalhes."$'\n'
+          fi
+          if [ "$AUDIT" = "true" ]; then
+            body+="- **Biblioteca com falha de segurança conhecida** (gravidade alta ou crítica). Detalhes no registro da execução: ${RUN}"$'\n'
+          fi
+          body+=$'\n'"_Os detalhes (e-mails, endereços IP) ficam só no painel, nunca aqui: este repositório é público._"
+          open=$(gh issue list --label seguranca --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh issue create --title "⚠️ Aviso de segurança do Fynvault" --label seguranca --body "$body"
+          fi

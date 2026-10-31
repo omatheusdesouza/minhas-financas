@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { logSecurityEvent } from './adminBackend'
 import type { Backend, User } from './backend'
 import { RemoteError, type Remote } from './sync'
 import type { TableName } from './tables'
@@ -114,7 +115,12 @@ export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
       return () => data.subscription.unsubscribe()
     },
     async signIn(email, password) {
-      check(await sb.auth.signInWithPassword({ email, password }))
+      const res = await sb.auth.signInWithPassword({ email, password })
+      if (res.error) {
+        if (/invalid login credentials/i.test(res.error.message)) await logSecurityEvent(sb, 'login_failed', email)
+        check(res)
+      }
+      void logSecurityEvent(sb, 'login_ok')
     },
     async signUp(email, password, termsVersion) {
       const data = check(await sb.auth.signUp({
@@ -155,6 +161,7 @@ export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
     },
     async resetPassword(email) {
       check(await sb.auth.resetPasswordForEmail(email))
+      void logSecurityEvent(sb, 'reset_requested', email)
     },
     async verifyRecovery(email, code) {
       check(await sb.auth.verifyOtp({ email, token: code.trim(), type: 'recovery' }))

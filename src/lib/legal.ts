@@ -1,6 +1,6 @@
 /** Textos legais (LGPD). Ao mudar o conteúdo, troque LEGAL_VERSION: o app pede um novo aceite. */
-export const LEGAL_VERSION = '2026-10-30'
-export const LEGAL_DATE = '30 de outubro de 2026'
+export const LEGAL_VERSION = '2026-10-31'
+export const LEGAL_DATE = '31 de outubro de 2026'
 
 export const CONTROLLER = {
   name: 'Matheus de Souza Oliveira',
@@ -32,6 +32,9 @@ export const PRIVACY: LegalSection[] = [
         'Modo família: quem você convidou para ver ou editar suas finanças, com qual permissão, e os convites criados.',
         'Registros técnicos: datas de criação e alteração dos dados (para sincronizar entre aparelhos) e a data e a versão '
         + 'em que você aceitou estes termos.',
+        'Registros de segurança: tentativas de entrar com senha errada, acessos à conta, pedidos de recuperação de senha, '
+        + 'códigos de convite errados e bloqueios da proteção do site, com o e-mail usado, a data e a hora, o endereço IP e o '
+        + 'tipo de navegador. Servem só para detectar e barrar ataques e são apagados automaticamente após 90 dias.',
       ],
       'O app não pede nem acessa senhas de banco, cartões, localização, contatos ou a sua digital ou rosto, e não usa '
       + 'cookies de publicidade, rastreadores ou ferramentas de análise de terceiros.',
@@ -44,7 +47,9 @@ export const PRIVACY: LegalSection[] = [
         'Para prestar o serviço que você pediu: guardar e mostrar suas finanças, gerar relatórios, lembretes e sincronizar '
         + 'seus aparelhos — base legal: execução de contrato (art. 7º, V, da LGPD).',
         'Para manter o serviço seguro, evitar acessos indevidos e corrigir falhas — base legal: legítimo interesse '
-        + '(art. 7º, IX), sempre limitado ao necessário.',
+        + '(art. 7º, IX), sempre limitado ao necessário. É para isso que existem os registros de segurança; o responsável '
+        + 'pelo app vê esses registros e os dados de conta (e-mail, nome, datas de cadastro e de acesso) num painel de '
+        + 'gestão, mas esse painel não mostra seus lançamentos, valores nem comprovantes.',
         'Para cumprir obrigações legais ou ordens de autoridades, quando houver — base legal: art. 7º, II e VI.',
       ],
       'Os dados não são vendidos, não são usados para publicidade e não são usados para criar perfis sobre você.',
@@ -155,7 +160,7 @@ export const TERMS: LegalSection[] = [
     title: '4. Uso permitido',
     body: [
       'Não é permitido usar o app para atividades ilegais, tentar acessar dados de outras pessoas, sobrecarregar ou atacar '
-      + 'o serviço. Contas usadas dessa forma podem ser suspensas.',
+      + 'o serviço. Contas usadas dessa forma podem ser bloqueadas ou excluídas pelo responsável pelo app.',
     ],
   },
   {

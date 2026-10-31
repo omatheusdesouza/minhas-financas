@@ -87,6 +87,78 @@ export interface Backend {
 
   /** Modo família (modo nuvem com a migration 0004) */
   family?: FamilyApi
+  /** Registros de segurança e painel do gestor (modo nuvem com a migration 0008) */
+  security?: SecurityApi
+}
+
+/** Eventos que o próprio app registra (os de convite e do gestor o banco registra sozinho). */
+export type ClientSecurityEvent = 'login_failed' | 'login_ok' | 'reset_requested' | 'csp_violation'
+
+export type SecurityEventKind = ClientSecurityEvent
+  | 'invite_failed' | 'invite_blocked' | 'flood' | 'admin_block' | 'admin_unblock' | 'admin_delete'
+
+export interface SecurityEvent {
+  id: number
+  created_at: string
+  kind: SecurityEventKind
+  email: string | null
+  user_id: string | null
+  ip: string | null
+  user_agent: string | null
+  detail: string | null
+}
+
+export interface SecurityAlert {
+  id: number
+  created_at: string
+  level: 'info' | 'warn' | 'critical'
+  title: string
+  detail: string | null
+  resolved_at: string | null
+}
+
+export interface AdminUser {
+  id: string
+  email: string
+  name: string | null
+  created_at: string
+  last_sign_in_at: string | null
+  confirmed: boolean
+  blocked: boolean
+  admin: boolean
+  /** pessoas com quem compartilha as finanças / espaços de outros em que participa */
+  shares: number
+  member_of: number
+  /** senhas erradas nas últimas 24 h */
+  failed24: number
+}
+
+export interface AdminOverview {
+  users: number
+  new7: number
+  active30: number
+  unconfirmed: number
+  blocked: number
+  logins24: number
+  failed24: number
+  alerts: number
+  /** cadastros por dia nos últimos 30 dias */
+  signups: { day: string; n: number }[]
+}
+
+export interface SecurityApi {
+  /** Registra um evento (nunca dá erro: sem internet ou sem a migration, simplesmente não registra). */
+  report(kind: ClientSecurityEvent, email?: string | null, detail?: string | null): Promise<void>
+  /** O usuário logado é gestor? (quem decide é o banco) */
+  isAdmin(): Promise<boolean>
+  overview(): Promise<AdminOverview>
+  users(): Promise<AdminUser[]>
+  events(kind?: SecurityEventKind | null, days?: number): Promise<SecurityEvent[]>
+  alerts(all?: boolean): Promise<SecurityAlert[]>
+  resolveAlert(id: number | 'all'): Promise<void>
+  setBlocked(userId: string, blocked: boolean): Promise<void>
+  /** Exclui a conta e os dados; devolve quantos arquivos ficaram no Storage para apagar à mão. */
+  deleteUser(userId: string): Promise<{ files: number }>
 }
 
 export interface FamilyApi {

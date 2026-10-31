@@ -3,6 +3,8 @@ import { App as CapApp } from '@capacitor/app'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { App } from './App'
+import { api } from './lib/api'
+import { cspReport, isFramed } from './lib/security'
 import { applyTheme } from './lib/theme'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
@@ -34,8 +36,26 @@ if (Capacitor.isNativePlatform()) {
   }))
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+// Bloqueios da política de segurança (código estranho tentando rodar): avisa o gestor
+const cspSeen = new Set<string>()
+document.addEventListener('securitypolicyviolation', (e) => {
+  const detail = cspReport(e, cspSeen)
+  if (detail && cspSeen.size <= 5) api.security?.report('csp_violation', null, detail)
+})
+
+const root = ReactDOM.createRoot(document.getElementById('root')!)
+if (!Capacitor.isNativePlatform() && isFramed(window)) {
+  // Aberto escondido dentro de outro site: não mostra nada além do aviso
+  root.render(
+    <p style={{ padding: 24, fontFamily: 'sans-serif' }}>
+      Por segurança, o Fynvault só funciona aberto diretamente.{' '}
+      <a href={location.href} target="_top" rel="noopener">Abrir o Fynvault</a>
+    </p>,
+  )
+} else {
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  )
+}

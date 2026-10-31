@@ -16,12 +16,15 @@ import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
 import { moneyInput, parseMoney, money } from '../lib/format'
 import { updateApp } from '../lib/updates'
+import { passwordProblem } from '../lib/security'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
 import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
 import { useApp } from '../store'
+import { useIsAdmin } from '../components/useIsAdmin'
 
 export function Settings() {
   const { user, profile, sync } = useApp()
+  const admin = useIsAdmin()
   const lock = useLock()
   const [pwOpen, setPwOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
@@ -66,6 +69,7 @@ export function Settings() {
           <Link to="/reservas"><span className="menu-emoji">🛟</span> Reservas <Icon name="right" className="end" /></Link>
           <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
+          {admin && <Link to="/gestor"><span className="menu-emoji">🛡️</span> Painel do gestor <Icon name="right" className="end" /></Link>}
           <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento e cartões <Icon name="right" className="end" /></Link>
           <Link to="/lancamentos/importar"><Icon name="download" /> Importar extrato do banco <Icon name="right" className="end" /></Link>
@@ -103,14 +107,15 @@ function PasswordSheet({ onClose }: { onClose: () => void }) {
   const { run } = useApp()
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
-  const valid = pw.length >= 8 && pw === pw2
+  const weak = pw ? passwordProblem(pw) : null
+  const valid = !!pw && !weak && pw === pw2
   return (
     <Sheet title="Trocar senha" onClose={onClose} footer={
       <button className="btn primary grow" disabled={!valid} onClick={async () => {
         if (await run(() => api.updatePassword(pw).then(() => true), 'Senha alterada')) onClose()
       }}>Salvar</button>
     }>
-      <Field label="Nova senha" hint="Mínimo de 8 caracteres"><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></Field>
+      <Field label="Nova senha" hint={weak ?? 'Mínimo de 8 caracteres, com letras e números'}><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" /></Field>
       <Field label="Repita a nova senha"><input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" /></Field>
       {pw2 && pw !== pw2 && <p className="bad-text small">As senhas não conferem.</p>}
     </Sheet>

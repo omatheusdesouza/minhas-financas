@@ -5,10 +5,12 @@ import { MyAvatar } from './Avatar'
 import { Icon } from './Icon'
 import { Sheet } from './Sheet'
 import { SpaceSwitcher } from './SpaceSwitcher'
+import { useIsAdmin } from './useIsAdmin'
 
 /** Menu lateral da versão para computador (no celular fica escondido e vale a barra de baixo). */
 export function Sidebar({ onHelp }: { onHelp: () => void }) {
   const { profile, sync, openEditor, canEdit } = useApp()
+  const admin = useIsAdmin()
   const syncText = !sync ? null
     : sync.state === 'offline' ? 'Sem internet'
       : sync.state === 'syncing' ? 'Sincronizando…'
@@ -35,6 +37,7 @@ export function Sidebar({ onHelp }: { onHelp: () => void }) {
             <Icon name={n.icon} /> <span className="grow">{n.label}</span> <kbd>{n.key}</kbd>
           </NavLink>
         ))}
+        {admin && <NavLink to="/gestor" title="Painel do gestor"><Icon name="user" /> <span className="grow">Gestor</span></NavLink>}
       </nav>
 
       <div className="side-foot">

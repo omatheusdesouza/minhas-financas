@@ -1,3 +1,4 @@
+import { supabaseSecurity } from './adminBackend'
 import type { Backend, FamilyApi, User } from './backend'
 import { FirstSyncOfflineError, SchemaOutdatedError } from './backend'
 import { createLocalData, type DataApi } from './localData'
@@ -161,8 +162,13 @@ export function createCloudBackend(url: string, key: string): Backend {
     },
     async accept(code) {
       online()
-      const { error } = await sb.rpc('accept_family_invite', { p_code: code.trim().toUpperCase() })
-      if (error) throw new Error(error.message.replace(/^.*?:\s*/, ''))
+      // join_family (migration 0008) conta as tentativas erradas; sem ela, usa a função antiga
+      const r = await sb.rpc('join_family', { p_code: code.trim().toUpperCase() })
+      if (r.error?.code === 'PGRST202') {
+        const { error } = await sb.rpc('accept_family_invite', { p_code: code.trim().toUpperCase() })
+        if (error) throw new Error(error.message.replace(/^.*?:\s*/, ''))
+      } else if (r.error) throw new Error(r.error.message.replace(/^.*?:\s*/, ''))
+      else if ((r.data as { error?: string })?.error) throw new Error((r.data as { error: string }).error)
       const list = await refreshFamily()
       return list[list.length - 1]
     },
@@ -213,6 +219,7 @@ export function createCloudBackend(url: string, key: string): Backend {
   return {
     mode: 'cloud',
     ...auth,
+    security: supabaseSecurity(sb),
     ...pickData(data),
 
     async signOut() {
