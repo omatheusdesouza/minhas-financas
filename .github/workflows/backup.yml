@@ -1,0 +1,59 @@
+name: Backup do banco (Supabase)
+
+# Toda segunda-feira às 03:17 (Brasília) e quando você clicar em "Run workflow".
+# Precisa de dois secrets: SUPABASE_DB_URL (string de conexão "Session pooler") e BACKUP_PASSPHRASE
+# (senha para criptografar). Sem eles, o workflow só avisa e termina.
+# O arquivo sai CRIPTOGRAFADO (AES-256) porque artefatos de repositório público podem ser baixados por
+# qualquer pessoa logada no GitHub. Fica guardado por 30 dias. Não inclui fotos e comprovantes (Storage).
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir configuração
+        id: cfg
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::notice::Backup não configurado: crie os secrets SUPABASE_DB_URL e BACKUP_PASSPHRASE (veja o README)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Copiar o banco e criptografar
+        if: steps.cfg.outputs.ok == 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          # tabelas e dados do app + contas (auth.users e auth.identities), sem dono nem permissões
+          docker run --rm -e DB_URL postgres:17 sh -c '
+            pg_dump "$DB_URL" --schema=public --no-owner --no-privileges &&
+            pg_dump "$DB_URL" --data-only --table=auth.users --table=auth.identities --no-owner --no-privileges
+          ' > fynvault.sql
+          test -s fynvault.sql
+          gzip -9 fynvault.sql
+          printf '%s' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o "fynvault-$(date -u +%Y-%m-%d).sql.gz.gpg" fynvault.sql.gz
+          rm -f fynvault.sql.gz
+          ls -l *.gpg
+
+      - uses: actions/upload-artifact@v7
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          name: fynvault-backup-${{ github.run_number }}
+          path: fynvault-*.sql.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
