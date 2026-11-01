@@ -136,6 +136,10 @@ export class CategoryIndex {
     const p = c.parent_id ? this.get(c.parent_id) : undefined
     return p ? `${p.name} › ${c.name}` : c.name
   }
+  /** Só o nome da subcategoria (ou da categoria), para listas onde o caminho completo não cabe. */
+  short(id: string | null | undefined): string {
+    return this.get(id)?.name ?? 'Sem categoria'
+  }
   /** Natureza: a da subcategoria, ou herdada da categoria principal. */
   nature(id: string | null | undefined) {
     return this.get(id)?.nature ?? 'essencial'

@@ -380,8 +380,11 @@ input:disabled { opacity: .6; }
 .avatar-img, .avatar-fallback { border-radius: 50%; flex-shrink: 0; object-fit: cover; display: grid; place-items: center;
   box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--gold); }
 .avatar-fallback { background: var(--accent-soft); color: var(--text); font-family: var(--serif); font-weight: 600; line-height: 1; }
-.home-top { gap: 14px; }
-.home-top .hello { font-size: 26px; }
+.home-top { gap: 12px; align-items: center; }
+.greet { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.greet-hi { font-size: 13px; color: var(--muted); line-height: 1.2; }
+.home-top .hello { font-size: 26px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.greet .space-chip { align-self: flex-start; margin-top: 6px; }
 .home-avatar { display: block; border-radius: 50%; }
 .account-card { color: inherit; }
 .account-name { font-family: var(--serif); font-size: 22px; font-weight: 600; display: block; }
@@ -567,6 +570,7 @@ kbd {
   .screen.narrow { max-width: 820px; }
   .top h1 { font-size: 34px; }
   .home-top .settings-link, .top .back-home { display: none; }
+  .home-top .hello { font-size: 30px; }
 
   .sidebar {
     position: fixed; inset: 0 auto 0 0; width: var(--side); z-index: 30; display: flex; flex-direction: column; gap: 18px;
@@ -824,4 +828,62 @@ button.goal-empty { text-align: left; font: inherit; color: inherit; width: 100%
   .admin-dates { display: flex; }
   .admin-top { grid-template-columns: 1fr 1fr; }
   .admin-screen > .segmented { max-width: 640px; }
+}
+
+/* Importar extrato */
+.import-formats { display: flex; flex-wrap: wrap; gap: 6px; }
+.import-drop { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 16px; border: 2px dashed var(--line); border-radius: 16px; background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; transition: border-color .15s, background .15s, transform .15s; }
+.import-drop:hover, .import-drop.on { border-color: var(--accent); background: var(--accent-soft); }
+.import-drop:active { transform: scale(.99); }
+.import-drop:disabled { opacity: .6; cursor: progress; }
+.import-password { display: flex; gap: 10px; align-items: flex-end; }
+.import-password .field { flex: 1; margin: 0; }
+.import-amount { border: 0; background: none; font: inherit; font-weight: 700; padding: 2px 6px; margin: -2px -6px; border-radius: 8px; white-space: nowrap; cursor: pointer; }
+.import-amount.neg { color: var(--bad); }
+.import-amount.pos { color: var(--good); }
+.import-amount:hover:not(:disabled) { background: var(--surface-2); }
+
+/* ---------- Movimento ----------
+   Entrada suave das telas e dos cartões, resposta ao toque e painéis com leve "mola".
+   As animações só têm efeito durante a entrada (fill-mode backwards): depois não deixam transform
+   no elemento, para não atrapalhar painéis e avisos com posição fixa dentro da tela. */
+:root { --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-spring: cubic-bezier(.2, .9, .25, 1.06); }
+@keyframes page-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes pop { 40% { transform: scale(.82); } 70% { transform: scale(1.08); } }
+@keyframes pill-in { from { transform: scaleX(.4); opacity: 0; } }
+@keyframes modal-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
+
+.app main > .screen { animation: page-in .26s var(--ease-out) backwards; }
+.dash .card, .screen > .card, .screen > section.card, .stat-grid > *, .admin-tiles > *, .goal-grid > * { animation: rise .34s var(--ease-out) backwards; }
+.dash .o-1, .screen > .card:nth-child(2) { animation-delay: .02s; }
+.dash .o-2, .screen > .card:nth-child(3) { animation-delay: .05s; }
+.dash .o-3, .screen > .card:nth-child(4) { animation-delay: .08s; }
+.dash .o-4, .screen > .card:nth-child(5) { animation-delay: .11s; }
+.dash .o-5, .dash .o-6, .dash .o-7, .dash .o-8, .dash .o-9, .screen > .card:nth-child(n + 6) { animation-delay: .14s; }
+
+.sheet { animation: up .3s var(--ease-spring); }
+.toast { animation: up .28s var(--ease-spring); }
+
+/* toque: o botão "afunda" um pouco */
+.btn, .icon-btn, .chip-btn, .fab, .side-new, .tabbar a, .import-drop, .segmented button, .pay-btn {
+  transition: transform .12s var(--ease-out), background .15s, border-color .15s, color .15s, filter .15s, box-shadow .15s;
+}
+.btn:active:not(:disabled), .icon-btn:active:not(:disabled), .chip-btn:active:not(:disabled), .segmented button:active { transform: scale(.96); }
+.fab:active, .side-new:active { transform: scale(.92); }
+.tx-main:active, .menu a:active, .menu button:active, .list-btn:active { background: var(--surface-2); }
+.pay-btn:active { animation: pop .32s var(--ease-out); }
+
+/* barra de baixo: o item aberto ganha uma "pílula" atrás do ícone */
+.tabbar a svg { padding: 3px 14px; border-radius: 99px; box-sizing: content-box; transition: background .2s, color .2s; }
+.tabbar a.active svg { background: var(--accent-soft); animation: pill-in .25s var(--ease-out); }
+
+@media (min-width: 1024px) {
+  .sheet-backdrop .sheet { animation: modal-in .24s var(--ease-out); }
+}
+
+/* Quem pediu menos movimento no celular/computador: sem animações (o carregamento continua girando devagar) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .spinner { animation: spin 1.6s linear infinite !important; }
 }

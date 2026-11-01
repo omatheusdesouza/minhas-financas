@@ -24,13 +24,18 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
           {cat?.icon ?? (t.kind === 'income' ? '💰' : '❔')}
         </span>
         <span className="tx-text">
-          <span className="tx-desc">{t.description || idx.label(t.category_id)}</span>
-          <span className="tx-meta">
-            {showDate && <>{fmt.short(onCard ? t.purchase_date! : t.date)} · </>}
-            {idx.label(t.category_id)}
-            {pm && <> · {onCard ? '💳 ' : ''}{pm.name}</>}
-            {t.recurring_bill_id && <> · 🔁</>}
-            {t.receipt_path && <> · 📎</>}
+          <span className="tx-desc">{t.description || idx.short(t.category_id)}</span>
+          <span className="tx-meta" title={idx.label(t.category_id)}>
+            {[
+              showDate && fmt.short(onCard ? t.purchase_date! : t.date),
+              // com descrição, mostra a subcategoria; sem descrição (o título já é a subcategoria), a categoria principal
+              t.description
+                ? (t.description.trim().toLowerCase() === idx.short(t.category_id).toLowerCase() ? null : idx.short(t.category_id))
+                : idx.get(t.category_id)?.parent_id ? idx.short(idx.get(t.category_id)!.parent_id) : null,
+              pm && `${onCard ? '💳 ' : ''}${pm.name}`,
+              t.recurring_bill_id && '🔁',
+              t.receipt_path && '📎',
+            ].filter(Boolean).join(' · ')}
           </span>
         </span>
         <span className="tx-right">

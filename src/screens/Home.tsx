@@ -94,8 +94,8 @@ export function Home() {
     <div className="screen">
       <header className="top home-top">
         <Link to="/ajustes/perfil" className="home-avatar" aria-label="Meu perfil"><MyAvatar size={48} /></Link>
-        <div className="grow">
-          <p className="muted small">{hello},</p>
+        <div className="grow greet">
+          <span className="greet-hi">{hello},</span>
           <h1 className="hello">{profile?.display_name}</h1>
           <SpaceSwitcher />
         </div>
