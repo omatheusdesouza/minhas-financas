@@ -65,7 +65,12 @@ export function PaymentSelect({ value, onChange }: { value: string | null; onCha
     ['Outras formas', list.filter((p) => p.type !== 'account' && p.type !== 'credit_card')],
   ]
   const grouped = groups.filter(([, l]) => l.length).length > 1
-  const opt = (p: (typeof list)[number]) => <option key={p.id} value={p.id}>{p.type === 'credit_card' ? '💳 ' : p.type === 'account' ? '🏦 ' : ''}{p.name}</option>
+  const accountName = (id: string | null | undefined) => paymentMethods.find((a) => a.id === id && a.type === 'account')?.name
+  const opt = (p: (typeof list)[number]) => (
+    <option key={p.id} value={p.id}>
+      {p.type === 'credit_card' ? '💳 ' : p.type === 'account' ? '🏦 ' : ''}{p.name}{accountName(p.account_id) ? ` → ${accountName(p.account_id)}` : ''}
+    </option>
+  )
   return (
     <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">Não informado</option>

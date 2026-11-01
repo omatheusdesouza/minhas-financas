@@ -28,6 +28,8 @@ export interface PaymentMethod {
   /** conta (caixa): saldo exato informado e a data dele */
   opening_balance?: number | null
   opening_date?: string | null
+  /** cartão ou forma de pagamento ligado a uma conta do caixa: o dinheiro sai dela (migration 0010) */
+  account_id?: string | null
 }
 
 /** Transferência entre contas ou ajuste de saldo (migration 0009). Não é gasto nem ganho. */

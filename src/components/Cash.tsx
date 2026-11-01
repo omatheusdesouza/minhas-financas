@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
-import { adjustment, balances, cashTotal, earliestOpening, isAccount, statement, type AccountBalance } from '../lib/cash'
+import { adjustment, balances, cashTotal, earliestOpening, isAccount, linkedTo, statement, type AccountBalance } from '../lib/cash'
 import { addDays, fmt, today } from '../lib/dates'
 import { cashAvailable } from '../lib/features'
 import { money, parseMoney } from '../lib/format'
@@ -169,6 +169,12 @@ export function AccountSheet({ cash, item, onClose }: { cash: CashData; item: Ac
           {' · '}<span className="pos">+{money(item.inflow)}</span> · <span className="neg">−{money(item.outflow)}</span>
         </span>
       </div>
+      {linkedTo(item.account.id, paymentMethods).length > 0 && (
+        <p className="small cash-linked">
+          <span className="muted">Ligados a esta conta: </span>
+          {linkedTo(item.account.id, paymentMethods).map((m) => `${m.type === 'credit_card' ? '💳 ' : ''}${m.name}`).join(' · ')}
+        </p>
+      )}
       {entries.length ? (
         <div className="card flush cash-entries">
           {entries.map((e) => (

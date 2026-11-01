@@ -20,3 +20,5 @@ export const reservesAvailable = () => schemaAtLeast('0006')
 export const cardsAvailable = () => schemaAtLeast('0007')
 /** Caixa: contas com saldo, transferências e ajustes (migration 0009). */
 export const cashAvailable = () => schemaAtLeast('0009')
+/** Cartão ou forma de pagamento ligado a uma conta (migration 0010). */
+export const linkAvailable = () => schemaAtLeast('0010')

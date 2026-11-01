@@ -290,6 +290,9 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
   )
 }
 
+/** Contas primeiro, depois cartões de crédito, depois as outras formas. */
+const rank = (m: PaymentMethod) => (m.type === 'account' ? 0 : m.type === 'credit_card' ? 1 : 2)
+
 export function PaymentMethodsScreen() {
   const { paymentMethods, canEdit } = useApp()
   const [editing, setEditing] = useState<Partial<PaymentMethod> | null>(null)
@@ -300,7 +303,7 @@ export function PaymentMethodsScreen() {
       {canEdit && <button className="btn primary block" onClick={() => setEditing({})}><Icon name="plus" /> Nova conta, cartão ou forma</button>}
       <p className="muted small"><b>Contas</b> (Nubank, Itaú, Carteira) têm saldo e formam o Caixa. <b>Cartões</b> têm fechamento e vencimento da fatura. <b>Outras formas</b> (vale, promissória) só identificam o pagamento.</p>
       <div className="card flush">
-        {paymentMethods.map((m) => (
+        {[...paymentMethods].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'pt-BR')).map((m) => (
           <button key={m.id} className={`tx-main list-btn ${m.archived ? 'dim' : ''}`} disabled={!canEdit} onClick={() => setEditing(m)}>
             <span className="tx-icon">{m.type === 'credit_card' ? '💳' : m.type === 'account' ? '🏦' : <Icon name="card" />}</span>
             <span className="tx-text">
@@ -309,6 +312,7 @@ export function PaymentMethodsScreen() {
                 {[
                   m.type === 'credit_card' ? `Cartão · fecha dia ${m.closing_day} · vence dia ${m.due_day}`
                     : m.type === 'account' ? `Conta · saldo de ${money(m.opening_balance ?? 0)} em ${fmt.short(m.opening_date ?? today())}` : 'Outra forma',
+                  m.account_id && `→ ${paymentMethods.find((a) => a.id === m.account_id)?.name ?? 'conta'}`,
                   m.archived && 'arquivada',
                 ].filter(Boolean).join(' · ')}
               </span>

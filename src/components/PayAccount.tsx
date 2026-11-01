@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { isAccount } from '../lib/cash'
+import { isAccount, linkedAccount } from '../lib/cash'
 import { cashAvailable } from '../lib/features'
 import { useApp, useLoad } from '../store'
 import { AccountSelect, Field } from './Fields'
@@ -16,9 +16,11 @@ export function usePayAccount(paymentMethodId: string | null | undefined, curren
   const { paymentMethods } = useApp()
   const { data: ok } = useLoad(cashAvailable, [])
   const accounts = paymentMethods.filter((p) => isAccount(p) && !p.archived)
-  const pmIsAccount = isAccount(paymentMethods.find((p) => p.id === paymentMethodId))
-  const show = Boolean(ok) && accounts.length > 0 && !pmIsAccount
-  const fallback = [current, lastAccount()].find((id) => id && accounts.some((a) => a.id === id)) ?? accounts[0]?.id ?? null
+  const pm = paymentMethods.find((p) => p.id === paymentMethodId)
+  const linked = linkedAccount(pm, new Map(paymentMethods.map((p) => [p.id, p])))
+  // débito/Pix ligado a uma conta já sabe de onde sai; o cartão de crédito sugere a conta ligada, mas deixa trocar
+  const show = Boolean(ok) && accounts.length > 0 && !isAccount(pm) && !(linked && pm?.type !== 'credit_card')
+  const fallback = [current, linked, lastAccount()].find((id) => id && accounts.some((a) => a.id === id)) ?? accounts[0]?.id ?? null
   const [chosen, setChosen] = useState<string | null | undefined>(undefined)
   const value = chosen === undefined ? fallback : chosen
   return {

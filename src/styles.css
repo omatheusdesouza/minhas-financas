@@ -1104,3 +1104,4 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shado
 .cash-entry-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .cash-entry-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cash-screen .tx-main .tx-right { margin-right: 4px; }
+.cash-linked { margin: 0; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adjustment, balances, cashAccountOf, cashTotal, earliestOpening, statement } from '../cash'
+import { adjustment, balances, cashAccountOf, cashTotal, earliestOpening, linkedAccount, linkedTo, statement } from '../cash'
 import type { AccountMove, PaymentMethod, Transaction } from '../types'
 
 const acc = (id: string, opening: number, date = '2026-11-01', archived = false): PaymentMethod =>
@@ -13,6 +13,32 @@ const tx = (p: Partial<Transaction>): Transaction => ({
   recurring_month: null, receipt_path: null, ...p,
 })
 const move = (p: Partial<AccountMove>): AccountMove => ({ id: crypto.randomUUID(), kind: 'transfer', from_id: null, to_id: null, amount: 10, date: '2026-11-05', note: null, ...p })
+
+describe('cartão ligado a uma conta', () => {
+  const nu = acc('nu', 100)
+  const debit: PaymentMethod = { id: 'deb', name: 'Débito Nubank', archived: false, type: 'other', account_id: 'nu' }
+  const credit: PaymentMethod = { id: 'cc', name: 'Cartão Nubank', archived: false, type: 'credit_card', closing_day: 3, due_day: 10, account_id: 'nu' }
+  const broken: PaymentMethod = { id: 'x', name: 'Ligado a forma', archived: false, type: 'other', account_id: 'deb' }
+  const ms = [nu, acc('itau', 0), debit, credit, broken]
+  const map = new Map(ms.map((m) => [m.id, m]))
+
+  it('débito desconta da conta ligada; crédito usa a conta escolhida ao pagar a fatura, senão a ligada', () => {
+    expect(cashAccountOf({ payment_method_id: 'deb', paid_from: null }, map)).toBe('nu')
+    expect(cashAccountOf({ payment_method_id: 'cc', paid_from: 'itau' }, map)).toBe('itau')
+    expect(cashAccountOf({ payment_method_id: 'cc', paid_from: null }, map)).toBe('nu')
+    expect(linkedAccount(broken, map)).toBeNull() // ligação que não aponta para uma conta é ignorada
+    expect(linkedTo('nu', ms).map((m) => m.id)).toEqual(['deb', 'cc'])
+  })
+
+  it('saldo inclui o débito e a fatura paga pela conta ligada', () => {
+    const b = balances(ms, [
+      tx({ amount: 30, payment_method_id: 'deb' }),
+      tx({ amount: 45, payment_method_id: 'cc', date: '2026-11-10', paid_at: '2026-11-10' }),
+      tx({ amount: 99, payment_method_id: 'cc', date: '2026-12-10', paid: false }), // fatura em aberto: ainda não saiu
+    ], [])
+    expect(b.find((x) => x.account.id === 'nu')!.balance).toBe(25)
+  })
+})
 
 describe('caixa', () => {
   const byId = new Map(methods.map((m) => [m.id, m]))

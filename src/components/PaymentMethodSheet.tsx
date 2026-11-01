@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { invoiceFor } from '../lib/cards'
 import { fmt, today } from '../lib/dates'
-import { cardsAvailable, cashAvailable } from '../lib/features'
+import { isAccount as isCashAccount } from '../lib/cash'
+import { cardsAvailable, cashAvailable, linkAvailable } from '../lib/features'
 import { moneyInput, parseMoney } from '../lib/format'
 import type { PaymentMethod } from '../lib/types'
 import { useApp, useLoad } from '../store'
-import { Field, MoneyInput, Segmented, Toggle } from './Fields'
+import { AccountSelect, Field, MoneyInput, Segmented, Toggle } from './Fields'
 import { Sheet } from './Sheet'
 
 type Kind = 'other' | 'account' | 'credit_card'
@@ -16,9 +17,13 @@ type Kind = 'other' | 'account' | 'credit_card'
  * com a 0009, uma conta do caixa (Nubank, Itaú, Carteira...) com o saldo exato de uma data.
  */
 export function PaymentMethodSheet({ method, onClose }: { method: Partial<PaymentMethod>; onClose: () => void }) {
-  const { run, reloadMeta } = useApp()
+  const { run, reloadMeta, bump } = useApp()
   const { data: cardsOk } = useLoad(cardsAvailable, [])
   const { data: cashOk } = useLoad(cashAvailable, [])
+  const { data: linkOk } = useLoad(linkAvailable, [])
+  const { paymentMethods } = useApp()
+  const [accountId, setAccountId] = useState<string | null>(method.account_id ?? null)
+  const hasAccounts = paymentMethods.some((p) => isCashAccount(p) && !p.archived)
   const [name, setName] = useState(method.name ?? '')
   const [kind, setKind] = useState<Kind>(method.type ?? 'other')
   const isCard = kind === 'credit_card'
@@ -51,6 +56,13 @@ export function PaymentMethodSheet({ method, onClose }: { method: Partial<Paymen
   async function save() {
     setShowErrors(true)
     if (errors.length) return
+    // ligar agora a uma conta: avisa quantos lançamentos já pagos passam a descontar dela
+    if (linkOk && !isAccount && accountId && accountId !== (method.account_id ?? null) && method.id) {
+      const acc = paymentMethods.find((p) => p.id === accountId)
+      const since = acc?.opening_date ?? today()
+      const old = (await api.listTransactions('0000-01-01', '9999-12-31')).filter((t) => t.payment_method_id === method.id && t.paid && (t.paid_at ?? t.date) >= since && !t.paid_from)
+      if (old.length && !confirm(`${old.length} lançamento(s) já pago(s) com "${method.name}" desde ${fmt.day(since)} vão passar a descontar de ${acc?.name}. Se você já tinha ajustado o saldo por causa deles, ajuste de novo depois. Continuar?`)) return
+    }
     const ok = await run(async () => {
       await api.savePaymentMethod({
         ...(method as PaymentMethod), name: name.trim(), archived,
@@ -60,11 +72,12 @@ export function PaymentMethodSheet({ method, onClose }: { method: Partial<Paymen
         } : {}),
         // colunas da 0009: só são enviadas quando o banco já as tem
         ...(cashOk ? { opening_balance: isAccount ? openingValue : null, opening_date: isAccount ? openingDate : null } : {}),
+        ...(linkOk ? { account_id: isAccount ? null : accountId } : {}),
       })
       await reloadMeta()
       return true
     }, isCard ? 'Cartão salvo 💳' : isAccount ? 'Conta salva 🏦' : 'Forma de pagamento salva')
-    if (ok) onClose()
+    if (ok) { bump(); onClose() }
   }
 
   async function remove() {
@@ -90,6 +103,12 @@ export function PaymentMethodSheet({ method, onClose }: { method: Partial<Paymen
             : 'Forma de pagamento sem saldo próprio. Ex.: Vale-refeição, Promissória da loja X.'}
       </p>
       <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!method.id} maxLength={40} placeholder={isAccount ? 'Ex.: Nubank, Itaú, Carteira' : isCard ? 'Ex.: Cartão Nubank' : 'Ex.: Vale-refeição'} /></Field>
+      {!isAccount && linkOk && hasAccounts && (
+        <Field label={isCard ? 'A fatura é paga por qual conta?' : 'Desconta de qual conta?'}
+          hint={isCard ? 'Ao pagar a fatura, esta conta já vem escolhida (dá para trocar).' : 'Cartão de débito, Pix…: o que for pago com esta forma sai desta conta no Caixa.'}>
+          <AccountSelect value={accountId} onChange={setAccountId} none="Nenhuma" />
+        </Field>
+      )}
       {isAccount && cashOk && (
         <>
           <Field label="Saldo exato da conta" hint="Olhe no app do banco e digite o valor de agora. Lançamentos de antes desta data não mudam o saldo.">
