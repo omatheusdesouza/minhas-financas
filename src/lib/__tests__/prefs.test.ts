@@ -2,17 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { activeNav, fullOrder, homeLayout, menuLayout, move, newest, tabLayout, WIDGETS } from '../prefs'
 
 describe('personalização', () => {
-  it('ordem salva: ignora ids velhos, sem repetir, e põe blocos novos no fim', () => {
-    expect(fullOrder(['c', 'a', 'x', 'a'] as string[], ['a', 'b', 'c', 'd'])).toEqual(['c', 'a', 'b', 'd'])
+  it('ordem salva: ignora ids velhos, sem repetir, e encaixa itens novos depois do vizinho padrão', () => {
+    expect(fullOrder(['c', 'a', 'x', 'a'] as string[], ['a', 'c'])).toEqual(['c', 'a'])
     expect(fullOrder(undefined, ['a', 'b'])).toEqual(['a', 'b'])
-    expect(fullOrder(['b'], ['a', 'b', 'c'])).toEqual(['b', 'a', 'c'])
+    // o Caixa (novo) entra logo depois do Saldo, mesmo com a ordem personalizada
+    expect(fullOrder(['fixos', 'saldo', 'gastos'], ['saldo', 'caixa', 'fixos', 'gastos'])).toEqual(['fixos', 'saldo', 'caixa', 'gastos'])
+    expect(fullOrder(['b'], ['new', 'b'])).toEqual(['new', 'b'])
   })
 
   it('Início: padrão mostra tudo; ordem e blocos escondidos', () => {
     expect(homeLayout(undefined).map((w) => w.id)).toEqual(WIDGETS.map((w) => w.id))
     expect(homeLayout(undefined).every((w) => w.visible)).toBe(true)
-    const l = homeLayout({ home: { order: ['gastos', 'saldo'], hidden: ['saude'] } })
-    expect(l.slice(0, 3).map((w) => w.id)).toEqual(['gastos', 'saldo', 'fixos'])
+    const l = homeLayout({ home: { order: ['gastos', 'saldo', 'fixos', 'limites', 'meta', 'reservas', 'destaques', 'contas', 'saude', 'ultimos'], hidden: ['saude'] } })
+    expect(l.slice(0, 3).map((w) => w.id)).toEqual(['gastos', 'saldo', 'caixa'])
     expect(l.find((w) => w.id === 'saude')!.visible).toBe(false)
     expect(l.map((w) => w.position)).toEqual(l.map((_, i) => i))
   })
@@ -25,7 +27,7 @@ describe('personalização', () => {
 
   it('menu lateral: extras escondidos por padrão; Início e Ajustes sempre visíveis', () => {
     const def = menuLayout(undefined)
-    expect(def.filter((n) => n.visible).map((n) => n.id)).toEqual(['inicio', 'lancamentos', 'contas', 'relatorios', 'metas', 'reservas', 'ajustes'])
+    expect(def.filter((n) => n.visible).map((n) => n.id)).toEqual(['inicio', 'lancamentos', 'contas', 'relatorios', 'metas', 'reservas', 'caixa', 'ajustes'])
     const l = menuLayout({ menu: { order: ['ajustes', 'inicio'], hidden: ['inicio', 'ajustes', 'metas'] } })
     expect(l[0].id).toBe('ajustes')
     expect(l.find((n) => n.id === 'inicio')!.visible).toBe(true)

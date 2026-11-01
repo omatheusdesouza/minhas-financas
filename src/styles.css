@@ -1084,3 +1084,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shado
   .tx-chips { display: none; }
   .tx-chips-inline { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 3px; }
 }
+
+/* Caixa */
+.cash-card { color: inherit; gap: 6px; }
+.cash-card .card-title .link { font-size: 13px; }
+.cash-total { font-family: var(--serif); font-variant-numeric: var(--serif-nums); font-weight: 600; font-size: clamp(30px, 9vw, 40px); line-height: 1.05; letter-spacing: -.005em; overflow-wrap: anywhere; }
+.cash-mini { display: flex; flex-direction: column; gap: 0; margin-top: 6px; border-top: 1px solid var(--line); }
+.cash-mini > span { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.cash-mini > span:last-child { border-bottom: 0; }
+.cash-mini b { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cash-empty { align-items: flex-start; }
+.cash-empty p { margin: 0; }
+.cash-actions .btn { min-width: 0; }
+.cash-sheet-head { display: flex; flex-direction: column; gap: 4px; }
+.cash-entries { max-height: 50vh; overflow-y: auto; }
+.cash-entry { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; color: inherit; }
+.cash-entry:last-child { border-bottom: 0; }
+.cash-entry b { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cash-entry-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cash-entry-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cash-screen .tx-main .tx-right { margin-right: 4px; }

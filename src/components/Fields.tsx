@@ -58,12 +58,38 @@ export function CategorySelect({ kind, value, onChange, allowEmpty = true, inclu
 
 export function PaymentSelect({ value, onChange }: { value: string | null; onChange: (id: string | null) => void }) {
   const { paymentMethods } = useApp()
+  const list = paymentMethods.filter((p) => !p.archived || p.id === value)
+  const groups: [string, typeof list][] = [
+    ['Contas', list.filter((p) => p.type === 'account')],
+    ['Cartões de crédito', list.filter((p) => p.type === 'credit_card')],
+    ['Outras formas', list.filter((p) => p.type !== 'account' && p.type !== 'credit_card')],
+  ]
+  const grouped = groups.filter(([, l]) => l.length).length > 1
+  const opt = (p: (typeof list)[number]) => <option key={p.id} value={p.id}>{p.type === 'credit_card' ? '💳 ' : p.type === 'account' ? '🏦 ' : ''}{p.name}</option>
   return (
     <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">Não informado</option>
-      {paymentMethods.filter((p) => !p.archived || p.id === value).map((p) => (
-        <option key={p.id} value={p.id}>{p.type === 'credit_card' ? '💳 ' : ''}{p.name}</option>
-      ))}
+      {grouped
+        ? groups.filter(([, l]) => l.length).map(([label, l]) => <optgroup key={label} label={label}>{l.map(opt)}</optgroup>)
+        : list.map(opt)}
+    </select>
+  )
+}
+
+/** Escolha de uma conta do caixa (Nubank, Itaú, Carteira...). */
+export function AccountSelect({ value, onChange, none = 'Nenhuma (não mexe no caixa)', exclude }: {
+  value: string | null
+  onChange: (id: string | null) => void
+  none?: string | false
+  exclude?: string | null
+}) {
+  const { paymentMethods } = useApp()
+  const accounts = paymentMethods.filter((p) => p.type === 'account' && (!p.archived || p.id === value) && p.id !== exclude)
+  return (
+    <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)}>
+      {none !== false && <option value="">{none}</option>}
+      {none === false && !value && <option value="" disabled>Escolha a conta</option>}
+      {accounts.map((a) => <option key={a.id} value={a.id}>🏦 {a.name}</option>)}
     </select>
   )
 }

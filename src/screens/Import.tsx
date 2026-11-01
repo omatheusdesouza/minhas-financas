@@ -4,6 +4,7 @@ import { CategorySelect, Field, PaymentSelect } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { useBudgetWatch } from '../components/useBudgetWatch'
 import { api } from '../lib/api'
+import { isAccount } from '../lib/cash'
 import { invoiceFor, isCard } from '../lib/cards'
 import { addDays, fmt, today } from '../lib/dates'
 import { money } from '../lib/format'
@@ -103,7 +104,9 @@ export function ImportScreen() {
         setBusy(`Importando ${n + 1} de ${chosen.length}…`)
         if (it.status === 'settle' && it.settleId) {
           const t = existing.find((x) => x.id === it.settleId)!
-          await markPaid({ ...t, category_id: t.category_id ?? it.categoryId }, { amount: it.amount, paidAt: it.date })
+          // extrato de uma conta do caixa: a baixa fica registrada nessa conta
+          const fromAccount = isAccount(pm) && !isAccount(paymentMethods.find((m) => m.id === t.payment_method_id)) ? { paid_from: pm!.id } : undefined
+          await markPaid({ ...t, category_id: t.category_id ?? it.categoryId }, { amount: it.amount, paidAt: it.date, extra: fromAccount })
           continue
         }
         const base = {

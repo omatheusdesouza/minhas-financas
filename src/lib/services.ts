@@ -89,11 +89,12 @@ export async function propagateRecurring(bill: RecurringBill) {
 }
 
 /** Marca como pago/recebido. O valor é obrigatório (contas variáveis precisam informá-lo antes). */
-export async function markPaid(t: Transaction, opts: { amount: number; paidAt?: string; receiptPath?: string | null }) {
+export async function markPaid(t: Transaction, opts: { amount: number; paidAt?: string; receiptPath?: string | null; extra?: Partial<Transaction> }) {
   if (!(opts.amount > 0)) throw new Error('Informe um valor maior que zero.')
   return api.saveTransaction({
     ...t, amount: opts.amount, paid: true, paid_at: opts.paidAt ?? today(),
     receipt_path: opts.receiptPath === undefined ? t.receipt_path : opts.receiptPath,
+    ...(opts.extra ?? {}),
   })
 }
 

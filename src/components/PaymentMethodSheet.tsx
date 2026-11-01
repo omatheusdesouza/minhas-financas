@@ -2,19 +2,30 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { invoiceFor } from '../lib/cards'
 import { fmt, today } from '../lib/dates'
-import { cardsAvailable } from '../lib/features'
+import { cardsAvailable, cashAvailable } from '../lib/features'
 import { moneyInput, parseMoney } from '../lib/format'
 import type { PaymentMethod } from '../lib/types'
 import { useApp, useLoad } from '../store'
-import { Field, MoneyInput, Toggle } from './Fields'
+import { Field, MoneyInput, Segmented, Toggle } from './Fields'
 import { Sheet } from './Sheet'
 
-/** Criar ou editar uma forma de pagamento; com a migration 0007, pode ser um cartão de crédito com fatura. */
+type Kind = 'other' | 'account' | 'credit_card'
+
+/**
+ * Criar ou editar uma forma de pagamento. Com a migration 0007 pode ser um cartão de crédito com fatura;
+ * com a 0009, uma conta do caixa (Nubank, Itaú, Carteira...) com o saldo exato de uma data.
+ */
 export function PaymentMethodSheet({ method, onClose }: { method: Partial<PaymentMethod>; onClose: () => void }) {
   const { run, reloadMeta } = useApp()
   const { data: cardsOk } = useLoad(cardsAvailable, [])
+  const { data: cashOk } = useLoad(cashAvailable, [])
   const [name, setName] = useState(method.name ?? '')
-  const [isCard, setIsCard] = useState(method.type === 'credit_card')
+  const [kind, setKind] = useState<Kind>(method.type ?? 'other')
+  const isCard = kind === 'credit_card'
+  const isAccount = kind === 'account'
+  const [opening, setOpening] = useState(moneyInput(method.opening_balance == null ? null : Math.abs(method.opening_balance)))
+  const [negative, setNegative] = useState((method.opening_balance ?? 0) < 0)
+  const [openingDate, setOpeningDate] = useState(method.opening_date ?? today())
   const [closing, setClosing] = useState(method.closing_day ? String(method.closing_day) : '')
   const [due, setDue] = useState(method.due_day ? String(method.due_day) : '')
   const [limit, setLimit] = useState(moneyInput(method.credit_limit))
@@ -30,7 +41,11 @@ export function PaymentMethodSheet({ method, onClose }: { method: Partial<Paymen
     isCard && c == null && 'O dia de fechamento precisa ser de 1 a 31.',
     isCard && d == null && 'O dia de vencimento precisa ser de 1 a 31.',
     isCard && lim != null && !(lim > 0) && 'O limite precisa ser maior que zero (ou deixe em branco).',
+    isAccount && !opening.trim() && 'Informe o saldo da conta (pode ser 0).',
+    isAccount && opening.trim() && Number.isNaN(parseMoney(opening)) && 'Saldo inválido.',
+    isAccount && (!openingDate || openingDate > today()) && 'A data do saldo não pode ser no futuro.',
   ].filter(Boolean) as string[]
+  const openingValue = (negative ? -1 : 1) * Math.abs(parseMoney(opening) || 0)
   const example = isCard && c && d ? invoiceFor({ closing_day: c, due_day: d }, today()) : null
 
   async function save() {
@@ -40,13 +55,15 @@ export function PaymentMethodSheet({ method, onClose }: { method: Partial<Paymen
       await api.savePaymentMethod({
         ...(method as PaymentMethod), name: name.trim(), archived,
         ...(cardsOk ? {
-          type: isCard ? 'credit_card' : 'other',
+          type: kind === 'account' && !cashOk ? 'other' : kind,
           closing_day: isCard ? c : null, due_day: isCard ? d : null, credit_limit: isCard ? lim : null,
         } : {}),
+        // colunas da 0009: só são enviadas quando o banco já as tem
+        ...(cashOk ? { opening_balance: isAccount ? openingValue : null, opening_date: isAccount ? openingDate : null } : {}),
       })
       await reloadMeta()
       return true
-    }, isCard ? 'Cartão salvo 💳' : 'Forma de pagamento salva')
+    }, isCard ? 'Cartão salvo 💳' : isAccount ? 'Conta salva 🏦' : 'Forma de pagamento salva')
     if (ok) onClose()
   }
 
@@ -56,12 +73,32 @@ export function PaymentMethodSheet({ method, onClose }: { method: Partial<Paymen
   }
 
   return (
-    <Sheet title={method.id ? 'Editar forma de pagamento' : 'Nova forma de pagamento'} onClose={onClose} footer={<>
+    <Sheet title={method.id ? (isAccount ? 'Editar conta' : isCard ? 'Editar cartão' : 'Editar forma de pagamento') : isAccount ? 'Nova conta' : isCard ? 'Novo cartão' : 'Nova forma de pagamento'} onClose={onClose} footer={<>
       {method.id && <button className="btn danger ghost" onClick={remove}>Excluir</button>}
       <button className="btn primary grow" onClick={save}>Salvar</button>
     </>}>
-      <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!method.id} maxLength={40} placeholder="Ex.: Nubank, Pix, Dinheiro" /></Field>
-      {cardsOk && <Toggle checked={isCard} onChange={setIsCard} label="É um cartão de crédito (com fatura)" />}
+      {cardsOk && (
+        <Segmented value={kind} onChange={setKind} options={[
+          ...(cashOk || kind === 'account' ? [{ value: 'account' as Kind, label: 'Conta' }] : []),
+          { value: 'credit_card' as Kind, label: 'Cartão' },
+          { value: 'other' as Kind, label: 'Outra forma' },
+        ]} />
+      )}
+      <p className="muted small">
+        {isAccount ? 'Conta bancária ou carteira com saldo: entra no Caixa. Ex.: Nubank, Itaú, Carteira.'
+          : isCard ? 'Cartão de crédito: as compras entram na fatura e saem do caixa quando a fatura é paga.'
+            : 'Forma de pagamento sem saldo próprio. Ex.: Vale-refeição, Promissória da loja X.'}
+      </p>
+      <Field label="Nome"><input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!method.id} maxLength={40} placeholder={isAccount ? 'Ex.: Nubank, Itaú, Carteira' : isCard ? 'Ex.: Cartão Nubank' : 'Ex.: Vale-refeição'} /></Field>
+      {isAccount && cashOk && (
+        <>
+          <Field label="Saldo exato da conta" hint="Olhe no app do banco e digite o valor de agora. Lançamentos de antes desta data não mudam o saldo.">
+            <MoneyInput value={opening} onChange={setOpening} big />
+          </Field>
+          <Toggle checked={negative} onChange={setNegative} label="Saldo negativo (cheque especial)" />
+          <Field label="Saldo do dia"><input type="date" value={openingDate} max={today()} onChange={(e) => setOpeningDate(e.target.value)} /></Field>
+        </>
+      )}
       {cardsOk && isCard && (
         <>
           <div className="row2">

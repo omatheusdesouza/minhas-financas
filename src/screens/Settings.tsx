@@ -15,6 +15,7 @@ import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
 import { moneyInput, parseMoney, money } from '../lib/format'
+import { fmt, today } from '../lib/dates'
 import { updateApp } from '../lib/updates'
 import { passwordProblem } from '../lib/security'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
@@ -72,7 +73,7 @@ export function Settings() {
           <Link to="/ajustes/personalizar"><span className="menu-emoji">🧩</span> Personalizar Início e navegação <Icon name="right" className="end" /></Link>
           {admin && <Link to="/gestor"><span className="menu-emoji">🛡️</span> Painel do gestor <Icon name="right" className="end" /></Link>}
           <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
-          <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento e cartões <Icon name="right" className="end" /></Link>
+          <Link to="/ajustes/pagamentos"><Icon name="card" /> Contas, cartões e formas de pagamento <Icon name="right" className="end" /></Link>
           <Link to="/lancamentos/importar"><Icon name="download" /> Importar extrato do banco <Icon name="right" className="end" /></Link>
           {api.mode === 'cloud' && <button onClick={() => setPwOpen(true)}><Icon name="user" /> Trocar senha <Icon name="right" className="end" /></button>}
           <button className="danger-text" onClick={async () => {
@@ -295,21 +296,22 @@ export function PaymentMethodsScreen() {
 
   return (
     <div className="screen narrow">
-      <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Formas de pagamento</h1><span /></header>
-      {canEdit && <button className="btn primary block" onClick={() => setEditing({})}><Icon name="plus" /> Nova forma de pagamento</button>}
-      <p className="muted small">Ex.: Cartão Nubank, Cartão Itaú, Pix, Dinheiro, Promissória da loja X… Cartões de crédito podem ter fechamento e vencimento da fatura.</p>
+      <header className="top"><Link to="/ajustes" className="icon-btn" aria-label="Voltar"><Icon name="left" /></Link><h1>Contas e cartões</h1><span /></header>
+      {canEdit && <button className="btn primary block" onClick={() => setEditing({})}><Icon name="plus" /> Nova conta, cartão ou forma</button>}
+      <p className="muted small"><b>Contas</b> (Nubank, Itaú, Carteira) têm saldo e formam o Caixa. <b>Cartões</b> têm fechamento e vencimento da fatura. <b>Outras formas</b> (vale, promissória) só identificam o pagamento.</p>
       <div className="card flush">
         {paymentMethods.map((m) => (
           <button key={m.id} className={`tx-main list-btn ${m.archived ? 'dim' : ''}`} disabled={!canEdit} onClick={() => setEditing(m)}>
-            <span className="tx-icon">{m.type === 'credit_card' ? '💳' : <Icon name="card" />}</span>
+            <span className="tx-icon">{m.type === 'credit_card' ? '💳' : m.type === 'account' ? '🏦' : <Icon name="card" />}</span>
             <span className="tx-text">
               <span className="tx-desc">{m.name}</span>
-              {(m.type === 'credit_card' || m.archived) && (
-                <span className="tx-meta">
-                  {m.type === 'credit_card' && `Cartão · fecha dia ${m.closing_day} · vence dia ${m.due_day}`}
-                  {m.archived && `${m.type === 'credit_card' ? ' · ' : ''}arquivada`}
-                </span>
-              )}
+              <span className="tx-meta">
+                {[
+                  m.type === 'credit_card' ? `Cartão · fecha dia ${m.closing_day} · vence dia ${m.due_day}`
+                    : m.type === 'account' ? `Conta · saldo de ${money(m.opening_balance ?? 0)} em ${fmt.short(m.opening_date ?? today())}` : 'Outra forma',
+                  m.archived && 'arquivada',
+                ].filter(Boolean).join(' · ')}
+              </span>
             </span>
             <Icon name="edit" size={16} />
           </button>

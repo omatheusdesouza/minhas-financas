@@ -8,6 +8,7 @@ import type { Transaction } from '../lib/types'
 import { useApp } from '../store'
 import { Field, MoneyInput, Toggle } from './Fields'
 import { Icon } from './Icon'
+import { PayAccountField, usePayAccount } from './PayAccount'
 import { ReserveSplit, emptySplit, sendToReserve, splitError, type SplitValue } from './ReserveSheets'
 import { Sheet } from './Sheet'
 import { useBudgetWatch } from './useBudgetWatch'
@@ -29,6 +30,7 @@ export function PaySheet({ tx, onClose }: { tx: Transaction; onClose: () => void
   const value = parseMoney(amount)
   const income = tx.kind === 'income'
   const [split, setSplit] = useState<SplitValue>(emptySplit)
+  const account = usePayAccount(tx.payment_method_id, tx.paid_from)
   // Ao receber um ganho (ex.: salário), pode mandar uma parte direto para uma reserva
   const splitErr = income && payNow ? splitError(split, value) : null
   const valid = value > 0 && paidAt <= today() && !splitErr
@@ -43,7 +45,7 @@ export function PaySheet({ tx, onClose }: { tx: Transaction; onClose: () => void
       }
       let receiptPath: string | null | undefined
       if (file) receiptPath = await api.uploadFile('receipts', 'comprovante', await prepareUpload(file, 1800, 0.8))
-      await markPaid(tx, { amount: value, paidAt, receiptPath })
+      await markPaid(tx, { amount: value, paidAt, receiptPath, extra: account.patch() })
       if (income) await sendToReserve(split, paidAt, tx.description || idx.label(tx.category_id))
       return true
     }, payNow ? (income ? 'Marcado como recebido' : 'Conta paga ✓') : 'Valor informado'))
@@ -78,6 +80,7 @@ export function PaySheet({ tx, onClose }: { tx: Transaction; onClose: () => void
           <Field label={income ? 'Recebido em' : 'Pago em'}>
             <input type="date" value={paidAt} max={today()} onChange={(e) => e.target.value && setPaidAt(e.target.value)} />
           </Field>
+          <PayAccountField income={income} state={account} />
           {income && <ReserveSplit value={split} onChange={setSplit} total={value} />}
           {income && split.on && splitErr && <p className="bad-text small">{splitErr}</p>}
           <Field label="Comprovante (opcional)">

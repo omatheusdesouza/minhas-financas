@@ -24,6 +24,7 @@ import { ReserveDetailScreen, ReservesScreen } from './screens/Reserves'
 import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from './screens/Settings'
 import { Transactions } from './screens/Transactions'
 import { CustomizeScreen } from './screens/Customize'
+import { CashScreen } from './screens/Cash'
 import { LockProvider } from './lockContext'
 import { AppProvider, useApp } from './store'
 
@@ -129,6 +130,7 @@ function Shell() {
           <Route path="/metas/:id" element={<GoalDetailScreen />} />
           <Route path="/reservas" element={<ReservesScreen />} />
           <Route path="/reservas/:id" element={<ReserveDetailScreen />} />
+          <Route path="/caixa" element={<CashScreen />} />
           <Route path="/gestor" element={<Suspense fallback={<div className="screen"><div className="spinner" /></div>}><AdminScreen /></Suspense>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

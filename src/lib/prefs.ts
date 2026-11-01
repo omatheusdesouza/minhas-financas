@@ -4,7 +4,7 @@
  * vale a versão alterada por último (updatedAt).
  */
 
-export type WidgetId = 'saldo' | 'fixos' | 'limites' | 'meta' | 'reservas' | 'destaques' | 'contas' | 'saude' | 'gastos' | 'ultimos'
+export type WidgetId = 'saldo' | 'caixa' | 'fixos' | 'limites' | 'meta' | 'reservas' | 'destaques' | 'contas' | 'saude' | 'gastos' | 'ultimos'
 
 export interface WidgetInfo {
   id: WidgetId
@@ -18,6 +18,7 @@ export interface WidgetInfo {
 /** Na ordem padrão (a mesma de antes da personalização). */
 export const WIDGETS: WidgetInfo[] = [
   { id: 'saldo', label: 'Saldo previsto do mês', desc: 'Ganhos, gastos e quanto sobra', icon: '💰', col: 'main' },
+  { id: 'caixa', label: 'Caixa', desc: 'Quanto você tem nas contas agora', icon: '🏦', col: 'main' },
   { id: 'fixos', label: 'Renda e gastos fixos', desc: 'Quanto entra e sai todo mês', icon: '🔁', col: 'main' },
   { id: 'limites', label: 'Atenção aos limites', desc: 'Categorias perto ou acima do limite (só aparece quando há)', icon: '⚠️', col: 'side' },
   { id: 'meta', label: 'Meta de economia', desc: 'Progresso da meta principal', icon: '🎯', col: 'side' },
@@ -29,7 +30,7 @@ export const WIDGETS: WidgetInfo[] = [
   { id: 'ultimos', label: 'Últimos lançamentos', desc: 'Os 6 mais recentes do mês', icon: '📋', col: 'main' },
 ]
 
-export type NavId = 'inicio' | 'lancamentos' | 'contas' | 'relatorios' | 'metas' | 'reservas' | 'cartoes' | 'importar' | 'familia' | 'ajustes'
+export type NavId = 'inicio' | 'caixa' | 'lancamentos' | 'contas' | 'relatorios' | 'metas' | 'reservas' | 'cartoes' | 'importar' | 'familia' | 'ajustes'
 
 export interface NavInfo {
   id: NavId
@@ -47,6 +48,7 @@ export const NAV: NavInfo[] = [
   { id: 'relatorios', to: '/relatorios', label: 'Relatórios', short: 'Relatórios', icon: 'chart' },
   { id: 'metas', to: '/metas', label: 'Metas', short: 'Metas', icon: 'target' },
   { id: 'reservas', to: '/reservas', label: 'Reservas', short: 'Reservas', icon: 'safe' },
+  { id: 'caixa', to: '/caixa', label: 'Caixa', short: 'Caixa', icon: 'wallet' },
   { id: 'cartoes', to: '/contas?tab=cartoes', label: 'Cartões e faturas', short: 'Cartões', icon: 'card' },
   { id: 'importar', to: '/lancamentos/importar', label: 'Importar extrato', short: 'Importar', icon: 'download' },
   { id: 'familia', to: '/ajustes/familia', label: 'Família', short: 'Família', icon: 'user' },
@@ -70,10 +72,19 @@ export interface UiPrefs {
   updatedAt?: string
 }
 
-/** Ordem completa a partir do que foi salvo: ignora ids que não existem mais e põe os novos (de versões futuras) no fim. */
+/**
+ * Ordem completa a partir do que foi salvo: ignora ids que não existem mais e encaixa os novos (de versões
+ * mais novas do app, como o Caixa) logo depois do item que vem antes deles na ordem padrão.
+ */
 export function fullOrder<T extends string>(saved: T[] | undefined, all: T[]): T[] {
   const out = (saved ?? []).filter((id, i, arr) => all.includes(id) && arr.indexOf(id) === i)
-  return [...out, ...all.filter((id) => !out.includes(id))]
+  if (!out.length) return [...all]
+  all.forEach((id, i) => {
+    if (out.includes(id)) return
+    const before = all.slice(0, i).reverse().find((x) => out.includes(x))
+    out.splice(before ? out.indexOf(before) + 1 : 0, 0, id)
+  })
+  return out
 }
 
 export interface HomeLayoutItem extends WidgetInfo { visible: boolean; position: number }

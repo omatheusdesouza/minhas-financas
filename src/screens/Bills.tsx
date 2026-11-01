@@ -206,7 +206,7 @@ function PlanEditor({ plan, parts, onClose }: { plan: InstallmentPlan; parts: Tr
       <Field label="Descrição"><input value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
       <Field label="Credor / loja"><input value={creditor} onChange={(e) => setCreditor(e.target.value)} /></Field>
       <Field label="Categoria"><CategorySelect kind="expense" value={categoryId} onChange={setCategoryId} includeId={plan.category_id} /></Field>
-      <Field label="Forma de pagamento"><PaymentSelect value={paymentId} onChange={setPaymentId} /></Field>
+      <Field label="Conta ou forma de pagamento"><PaymentSelect value={paymentId} onChange={setPaymentId} /></Field>
       <Field label="Observações"><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
       <p className="note">Para mudar o valor ou a data de uma parcela específica, toque nela na lista.</p>
     </Sheet>
@@ -340,7 +340,7 @@ function RecurringEditor({ bill, onClose }: { bill: Partial<RecurringBill>; onCl
       {!periodOk && <p className="bad-text small">O mês final precisa ser depois do mês inicial.</p>}
       {variable && <p className="note">Todo mês a conta aparece em "A pagar" com <b>Informar valor</b>. Você preenche quando a conta chegar.</p>}
       <Field label="Categoria"><CategorySelect kind={kind} value={categoryId} onChange={setCategoryId} includeId={bill.category_id} /></Field>
-      <Field label="Forma de pagamento"><PaymentSelect value={paymentId} onChange={setPaymentId} /></Field>
+      <Field label="Conta ou forma de pagamento"><PaymentSelect value={paymentId} onChange={setPaymentId} /></Field>
       <div className="row2">
         <Field label="Começa em"><input type="month" value={startMonth} onChange={(e) => e.target.value && setStartMonth(e.target.value)} /></Field>
         <Field label="Termina em" hint="Vazio = sem fim"><input type="month" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} /></Field>

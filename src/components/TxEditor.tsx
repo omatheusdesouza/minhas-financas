@@ -189,7 +189,7 @@ export function TxEditor({ initial, initialMode = 'single', onClose }: {
         <Field label={card ? 'Data da compra' : mode === 'installments' ? '1º vencimento' : mode === 'recurring' ? 'Primeiro mês / dia' : 'Data'}>
           <input type="date" value={date} disabled={cardInstallment} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </Field>
-        <Field label="Forma de pagamento">
+        <Field label="Conta ou forma de pagamento">
           <PaymentSelect value={paymentId} onChange={setPaymentId} />
         </Field>
       </div>

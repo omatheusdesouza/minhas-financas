@@ -9,6 +9,7 @@ import { amt, type PaymentMethod, type Transaction } from '../lib/types'
 import { useApp } from '../store'
 import { Field } from './Fields'
 import { Icon } from './Icon'
+import { PayAccountField, usePayAccount } from './PayAccount'
 import { Sheet } from './Sheet'
 import { TxRow } from './TxRow'
 
@@ -50,6 +51,8 @@ export function InvoiceSheet({ inv, startPaying, onClose }: { inv: Invoice; star
   const [busy, setBusy] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const unpaid = inv.items.filter((t) => !t.paid)
+  // a fatura sai do caixa no dia em que é paga, pela conta escolhida
+  const account = usePayAccount(inv.card.id, unpaid[0]?.paid_from)
 
   async function pay() {
     if (busy || !unpaid.length || paidAt > today()) return
@@ -57,7 +60,7 @@ export function InvoiceSheet({ inv, startPaying, onClose }: { inv: Invoice; star
     const ok = await run(async () => {
       let receipt_path: string | undefined
       if (file) receipt_path = await api.uploadFile('receipts', 'fatura', await prepareUpload(file, 1800, 0.8))
-      await api.updateTransactions(unpaid.map((t) => t.id), { paid: true, paid_at: paidAt, ...(receipt_path ? { receipt_path } : {}) })
+      await api.updateTransactions(unpaid.map((t) => t.id), { paid: true, paid_at: paidAt, ...(receipt_path ? { receipt_path } : {}), ...account.patch() })
       return true
     }, 'Fatura paga ✓')
     setBusy(false)
@@ -81,6 +84,7 @@ export function InvoiceSheet({ inv, startPaying, onClose }: { inv: Invoice; star
       {paying && inv.pending > 0 && (
         <div className="card inset">
           <Field label="Pago em"><input type="date" value={paidAt} max={today()} onChange={(e) => e.target.value && setPaidAt(e.target.value)} /></Field>
+          <PayAccountField income={false} state={account} />
           <Field label="Comprovante (opcional)">
             <input ref={input} type="file" accept="image/*,application/pdf" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             {file ? (
