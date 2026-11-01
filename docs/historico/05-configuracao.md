@@ -51,6 +51,7 @@ Todas são idempotentes e só acrescentam. Conferir: `select * from app_migratio
 | `0005_lgpd_excluir_conta.sql` | função `delete_my_account` |
 | `0006_reservas.sql` | reservas (`savings_goals` sem alvo), `goal_contributions.kind`, `app_schema_version()` |
 | `0007_cartao_credito.sql` | cartão (`type`, `closing_day`, `due_day`, `credit_limit`), `transactions.purchase_date` |
+| `0009_caixa_contas.sql` | contas do caixa (`payment_methods.type = 'account'`, `opening_balance`, `opening_date`), `transactions.paid_from`, tabela `account_moves` (transferências e ajustes, RLS de família) |
 | `0008_gestor_seguranca.sql` | `app_admins`, `security_events`, `security_alerts`; `log_security_event`, `join_family` (limite de convite), funções `admin_*`; funções antigas fechadas para `anon` |
 
 ## Tabelas (schema `public`)
@@ -69,6 +70,7 @@ Todas são idempotentes e só acrescentam. Conferir: `select * from app_migratio
 | `family_members` | owner_id, member_id, role (editor/viewer) | pk (owner_id, member_id), owner ≠ member |
 | `family_invites` | code (pk) `^[A-Z2-9]{6}$`, owner_id, role, expires_at (7 dias), used_by, used_at | |
 | `app_migrations` | version, applied_at | controle das migrations |
+| `account_moves` | kind (transfer/adjust), from_id, to_id, amount > 0, date, note | FKs (id, user_id) para payment_methods; só da 0009 |
 | `app_admins` | user_id | gestores; sem políticas (só pelo SQL Editor) |
 | `security_events` | kind, email, user_id, ip, user_agent, detail | só pelas funções; apagados após 90 dias |
 | `security_alerts` | dedupe (regra+quem+dia), level, title, detail, resolved_at, notified_at | só pelas funções |

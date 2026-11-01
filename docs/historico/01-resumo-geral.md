@@ -114,3 +114,11 @@ Pedido: "deixar o mais luxuoso e minimalista possível". Feito num ramo (`visual
 o usuário aprovou e foi publicado. Serifada (Cormorant, números alinhados) nos títulos e valores grandes, tons mais
 sóbrios, status como texto com ponto, ícones neutros, cartões leves, botão + azul com dourado.
 
+## 11. Celular sem cortes e Caixa (01/11/2026)
+
+O usuário relatou que o tema novo ficou grande no celular e cortava informações. Reproduzido em 360px: valores em
+serifada não encolhiam (cartão de gastos fixos saía da tela) e as linhas de lançamento espremiam a descrição. Corrigido com
+fontes que se adaptam à largura e linhas compactas (status embaixo da descrição em telas estreitas).
+Depois, o **Caixa** (migration 0009): contas com saldo exato informado, total, escolha da conta ao lançar/pagar/receber e na
+fatura do cartão, transferências e ajustes que não contam como gasto ou ganho, bloco no Início e item no menu.
+

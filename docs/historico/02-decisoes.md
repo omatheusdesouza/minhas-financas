@@ -165,3 +165,16 @@ Cada item: **decisão** — motivo.
 - **Botão + azul com dourado** no claro e dourado no escuro (tokens `--fab-bg`/`--fab-fg`).
 - Mudanças visuais grandes: primeiro em ramo, com antes/depois para aprovação.
 
+## Caixa (01/11/2026)
+
+- **Conta = forma de pagamento do tipo "conta"** (não uma tabela à parte): o mesmo campo do lançamento passa a dizer de qual
+  conta saiu ou em qual entrou, e o importador já escolhe "de qual conta ou cartão é este extrato".
+- **Saldo inicial + data:** o que é anterior à data já está no saldo informado; só lançamentos **pagos** mexem no caixa, no
+  dia do pagamento (`paid_at`).
+- **Cartão:** a compra não mexe no caixa; a fatura sai da conta escolhida ao pagar (`paid_from` nas compras).
+- **Transferências e ajustes em `account_moves`:** não entram em relatórios de gasto/ganho.
+- **Compatível com banco sem a 0009:** a sincronização ignora a tabela nova se ela não existir e `paid_from`/saldo inicial
+  só são enviados quando `app_schema_version() >= 0009`.
+- **Itens novos de personalização** (Caixa) entram logo depois do vizinho padrão, mesmo com a ordem personalizada.
+- Fora do escopo por enquanto: enviar dinheiro para uma Reserva descontar de uma conta.
+

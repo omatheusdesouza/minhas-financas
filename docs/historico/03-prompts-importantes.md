@@ -190,3 +190,12 @@ Resposta à pergunta sobre o tipo: "Os dois juntos" (Início personalizável + a
 
 Depois das capturas de antes/depois: "Aprovado, pode publicar".
 
+## Caixa (01/11/2026)
+
+> Quero que adicione tambem o caixa, quanto possuimos na conta. Inicialmente irei colocar o valor exato que tenho em cada
+> conta (posso indicar quantas contas quiser) e faz a soma do caixa atual. Também posso informar qual conta foi ganho o
+> dinheiro e qual conta saiu o dinheiro.
+
+> Pode seguir com o plano e a migration 0009 e o tema que foi atualizado ficou muito grande no celular e as caixas ficaram
+> vazadas cortando informações. Organize isso e siga para o projeto. Tem toda minha autorização!
+

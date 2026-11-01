@@ -1,6 +1,6 @@
 # 04 — Estado atual (31/10/2026)
 
-Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor 8 desde a v1.1.24); antes, **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0008 aplicadas**.
+Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor 8 desde a v1.1.24); antes, **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0008 aplicadas**; **0009 (caixa) escrita, aguardando o usuário rodar**.
 
 ## Pronto
 
@@ -35,7 +35,8 @@ Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor
 | Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada; painel confirmado pelo usuário no APK em 01/11/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
 | Dashboard personalizável: blocos do Início (ligar, desligar, ordenar), barra de baixo e menu lateral escolhidos pela pessoa, teclas 1–9 seguindo o menu | Pronto (salvo na conta; v1.1.26 instalada e testada pelo usuário em 01/11/2026) |
 | Visual luxo e minimalista (serifada nos títulos e valores, tons sóbrios, status discretos) | Pronto (aprovado pelo usuário em 01/11/2026) |
-| README atualizado, 111 testes automáticos, CI gerando APK | Pronto |
+| Caixa: contas com saldo, total, extrato, transferir, ajustar, conta escolhida ao pagar/receber e na fatura | Código pronto; depende da migration 0009 |
+| README atualizado, 116 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
 ## Parcial / não verificado
@@ -70,7 +71,8 @@ Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor
    `skipWaiting`/`clientsClaim` no `vite.config.ts` (já corrigido no `main`), senão a versão nova fica esperando até fechar
    todas as janelas do app.
 
-1. Ligar Dependabot alerts e Secret scanning no GitHub.
+1. Rodar a migration 0009 (caixa) e cadastrar as contas com o saldo de hoje.
+2. Ligar Dependabot alerts e Secret scanning no GitHub.
    Opcional no Supabase: CAPTCHA no login, verificação em duas etapas (MFA) e Leaked password protection (plano Pro).
 2. Instalar a v1.1.10 por cima e testar offline (modo avião → lançar/pagar → voltar → "Tudo sincronizado ✓").
 3. Testar o modo família com uma segunda conta (visualizar, editar, remover).
