@@ -7,7 +7,8 @@ import { api } from '../lib/api'
 import { invoiceFor, isCard } from '../lib/cards'
 import { addDays, fmt, today } from '../lib/dates'
 import { money } from '../lib/format'
-import { buildPreview, decodeText, learnCategories, parseStatement, rowKeys, type ImportItem, type Statement } from '../lib/importer'
+import { PdfPasswordError, readStatementFile } from '../lib/importFile'
+import { buildPreview, learnCategories, rowKeys, type ImportItem, type Statement } from '../lib/importer'
 import { stableId } from '../lib/localData'
 import { markPaid } from '../lib/services'
 import type { Transaction } from '../lib/types'
@@ -26,6 +27,10 @@ export function ImportScreen() {
   const [existing, setExisting] = useState<Transaction[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+  // PDF com senha: guarda o arquivo até a pessoa digitar a senha
+  const [locked, setLocked] = useState<{ file: File; wrong: boolean } | null>(null)
+  const [password, setPassword] = useState('')
+  const [dragging, setDragging] = useState(false)
 
   const pm = paymentMethods.find((m) => m.id === paymentId)
   const card = isCard(pm) ? pm : null
@@ -50,13 +55,16 @@ export function ImportScreen() {
     }
   }
 
-  async function pickFile(f: File | undefined) {
+  async function pickFile(f: File | undefined, pdfPassword?: string) {
     setError('')
     setItems(null)
     if (!f) return
     setFileName(f.name)
+    setBusy('Lendo o arquivo…')
     try {
-      const st = parseStatement(decodeText(await f.arrayBuffer()))
+      const st = await readStatementFile(f, pdfPassword)
+      setLocked(null)
+      setPassword('')
       setStatement(st)
       // extrato de cartão: já sugere o cartão (se houver um só)
       let pmId = paymentId
@@ -66,7 +74,10 @@ export function ImportScreen() {
       await prepare(st, pmId)
     } catch (e: any) {
       setStatement(null)
-      setError(e?.message ?? String(e))
+      if (e instanceof PdfPasswordError) setLocked({ file: f, wrong: e.wrong })
+      else setError(e?.message ?? String(e))
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -125,13 +136,34 @@ export function ImportScreen() {
 
       <section className="card">
         <p className="small">
-          No app ou site do seu banco, procure <b>Exportar extrato</b> e escolha o formato <b>OFX</b> (o mais comum) ou <b>CSV</b>.
-          Funciona com conta corrente e com fatura de cartão.
+          No app ou site do seu banco, procure <b>Exportar extrato</b> (ou a fatura do cartão) e salve no celular ou no computador.
         </p>
-        <input ref={input} type="file" accept=".ofx,.csv,.txt,application/x-ofx,text/csv" hidden onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
-        <button className="btn primary block" onClick={() => input.current?.click()} disabled={!!busy}>
-          <Icon name="download" size={18} /> {fileName ? 'Escolher outro arquivo' : 'Escolher arquivo OFX ou CSV'}
+        <div className="import-formats" aria-label="Formatos aceitos">
+          <span className="chip">OFX</span><span className="chip">CSV</span><span className="chip">Excel (.xlsx)</span><span className="chip">PDF</span>
+        </div>
+        {/* sem filtro de tipo: o celular não reconhece .ofx e deixaria o arquivo cinza; o formato é conferido pelo conteúdo */}
+        <input ref={input} type="file" hidden onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
+        <button
+          type="button"
+          className={`import-drop ${dragging ? 'on' : ''}`}
+          onClick={() => input.current?.click()}
+          disabled={!!busy}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); pickFile(e.dataTransfer.files?.[0]) }}
+        >
+          <Icon name="download" size={26} />
+          <b>{fileName ? 'Escolher outro arquivo' : 'Escolher o arquivo do extrato'}</b>
+          <span className="muted small">ou arraste o arquivo para cá</span>
         </button>
+        {locked && (
+          <form className="import-password" onSubmit={(e) => { e.preventDefault(); if (password) pickFile(locked.file, password) }}>
+            <Field label="Este PDF tem senha" hint={locked.wrong ? 'Senha incorreta. Tente de novo.' : 'Muitos bancos usam os primeiros dígitos do CPF. A senha não é guardada.'}>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus autoComplete="off" inputMode="text" />
+            </Field>
+            <button className="btn primary" disabled={!password || !!busy}>Abrir</button>
+          </form>
+        )}
         {fileName && statement && <p className="muted small">📄 {fileName} · {statement.format} · {statement.rows.length} lançamento(s)</p>}
         <Field label="De qual conta ou cartão é este extrato?" hint={card ? `Cartão: as compras entram nas faturas (fecha dia ${card.closing_day}, vence dia ${card.due_day}).` : 'Os lançamentos ficam com esta forma de pagamento.'}>
           <PaymentSelect value={paymentId} onChange={changePayment} />
@@ -139,6 +171,9 @@ export function ImportScreen() {
         {statement?.card && !card && <p className="note small">Este arquivo parece ser de cartão de crédito. Escolha o cartão acima para as compras entrarem na fatura certa.</p>}
         {error && <p className="alert">{error}</p>}
         {busy && <p className="muted small"><span className="spinner inline" /> {busy}</p>}
+        {statement?.format.startsWith('PDF') && items && (
+          <p className="note small">O PDF foi lido automaticamente: confira datas e valores. Se algum veio como gasto e era ganho (ou o contrário), toque no valor para trocar.</p>
+        )}
       </section>
 
       {items && (
@@ -156,16 +191,24 @@ export function ImportScreen() {
 
           <div className="card flush import-list">
             {items.map((it, i) => {
-              const locked = it.status === 'duplicate' || (Boolean(card) && it.kind === 'income')
+              const fixed = it.status === 'duplicate' || (Boolean(card) && it.kind === 'income')
               return (
                 <div key={it.id} className={`import-row ${it.include ? '' : 'off'}`}>
                   <label className="import-check">
-                    <input type="checkbox" checked={it.include} disabled={locked} onChange={(e) => set(i, { include: e.target.checked })} aria-label={`Importar ${it.description}`} />
+                    <input type="checkbox" checked={it.include} disabled={fixed} onChange={(e) => set(i, { include: e.target.checked })} aria-label={`Importar ${it.description}`} />
                   </label>
                   <div className="import-main">
                     <div className="import-top">
                       <span className="import-desc">{it.description}</span>
-                      <b className={it.kind === 'expense' ? 'neg' : 'pos'}>{it.kind === 'expense' ? '−' : '+'} {money(it.amount)}</b>
+                      <button
+                        type="button" className={`import-amount ${it.kind === 'expense' ? 'neg' : 'pos'}`} disabled={it.status === 'duplicate'}
+                        title="Trocar entre gasto e ganho" aria-label={`${it.kind === 'expense' ? 'Gasto' : 'Ganho'} de ${money(it.amount)}. Tocar para trocar`}
+                        onClick={() => {
+                          const kind = it.kind === 'expense' ? 'income' : 'expense'
+                          const reset = it.status === 'settle' || it.status === 'skip'
+                          set(i, { kind, categoryId: null, ...(reset ? { status: 'new', settleId: undefined, note: undefined } : {}), include: !(card && kind === 'income') && (reset || it.include) })
+                        }}
+                      >{it.kind === 'expense' ? '−' : '+'} {money(it.amount)}</button>
                     </div>
                     <div className="import-meta">
                       <span className="muted small">{fmt.day(it.date)}{card && it.kind === 'expense' && ` · fatura ${fmt.short(invoiceFor(card, it.date).due)}`}</span>
