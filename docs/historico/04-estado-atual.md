@@ -1,6 +1,6 @@
 # 04 — Estado atual (31/10/2026)
 
-Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor 8 desde a v1.1.24); antes, **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0009 aplicadas**; **0010 (cartão ligado à conta) escrita, aguardando o usuário rodar**.
+Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor 8 desde a v1.1.24); antes, **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0010 aplicadas**.
 
 ## Pronto
 
@@ -36,7 +36,7 @@ Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor
 | Dashboard personalizável: blocos do Início (ligar, desligar, ordenar), barra de baixo e menu lateral escolhidos pela pessoa, teclas 1–9 seguindo o menu | Pronto (salvo na conta; v1.1.26 instalada e testada pelo usuário em 01/11/2026) |
 | Visual luxo e minimalista (serifada nos títulos e valores, tons sóbrios, status discretos) | Pronto (aprovado pelo usuário em 01/11/2026) |
 | Caixa: contas com saldo, total, extrato, transferir, ajustar, conta escolhida ao pagar/receber e na fatura | Pronto (migration 0009 aplicada em 01/11/2026); falta o usuário cadastrar as contas e conferir com o banco |
-| Cartão ligado ao banco (débito desconta da conta; fatura sugere a conta) | Código pronto; depende da migration 0010 |
+| Cartão ligado ao banco (débito desconta da conta; fatura sugere a conta) | Pronto (migration 0010 aplicada em 01/11/2026); falta o usuário ligar os cartões às contas |
 | README atualizado, 118 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
