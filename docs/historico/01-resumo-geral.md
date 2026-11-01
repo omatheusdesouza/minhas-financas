@@ -101,3 +101,10 @@ não reconhece .ofx (arquivo cinza); e o CSV só era lido com o cabeçalho na 1�
 de PDF (inclusive com senha) e de .xlsx. Também: saudação do Início compacta, listas com o nome curto da categoria,
 animações de entrada, toque e painéis (respeitando "reduzir movimento").
 
+## 9. Dashboard personalizável (01/11/2026)
+
+Pedido: "uma dashboard ... definindo o que a pessoa quer escolher para navegar". Perguntado o tipo, o usuário escolheu
+"os dois juntos": Início com blocos escolhidos pela pessoa (ligar, desligar, ordenar) e navegação personalizada (3 atalhos
+da barra de baixo, com o Início fixo; itens e ordem do menu lateral, com Cartões, Importar e Família como opções). Tela
+Ajustes › Personalizar. Salvo no aparelho e na conta.
+

@@ -33,7 +33,8 @@ Versão publicada: **v1.1.24** (Capacitor 8, instalada pelo usuário em 01/11/20
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
 | Proteção do site (CSP, não abre dentro de outro site, build sem comentários), senha com letras e números | Pronto |
 | Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada; painel confirmado pelo usuário no APK em 01/11/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
-| README atualizado, 105 testes automáticos, CI gerando APK | Pronto |
+| Dashboard personalizável: blocos do Início (ligar, desligar, ordenar), barra de baixo e menu lateral escolhidos pela pessoa, teclas 1–9 seguindo o menu | Pronto (salvo na conta, vale em todos os aparelhos) |
+| README atualizado, 111 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
 ## Parcial / não verificado

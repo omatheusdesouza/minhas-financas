@@ -178,3 +178,9 @@ Resposta: "Sim!" ao plano (Fase 1 do site + migration 0008 + tela Gestor + verif
 > Reavalie toda intuição do app, verifique o que dá para melhorar no visual, verifique animações.
 > Pode fazer todas as mudanças agora com total altorização minha.
 
+## Dashboard (01/11/2026)
+
+> Tudo certo. Preciso que crie uma dashboard agora. Definindo o que a pessoa quer escolher para navegar.
+
+Resposta à pergunta sobre o tipo: "Os dois juntos" (Início personalizável + atalhos de navegação).
+

@@ -146,3 +146,13 @@ Cada item: **decisão** — motivo.
   Quem ativou "reduzir movimento" no aparelho não vê animações.
 - **Lista mostra só a subcategoria;** o caminho completo fica no título (ao passar o mouse).
 
+## Dashboard personalizável (01/11/2026)
+
+- **Preferências no `user_metadata` do login, sem migration:** é dado de interface, só do próprio usuário; vale em todos os
+  aparelhos. Sem internet, fica no aparelho e é enviado depois; entre os dois, vale o `updatedAt` mais recente.
+- **Início sempre na barra de baixo e Início/Ajustes sempre no menu:** garante um caminho de volta mesmo com tudo personalizado.
+- **Ordenar com setas, não arrastar:** arrastar em lista no celular é difícil e pouco acessível.
+- **No computador cada bloco mantém sua coluna** (resumo à esquerda, gráficos e metas à direita); a ordem vale dentro da
+  coluna. Se uma coluna ficar vazia, o Início vira uma coluna só.
+- **"Cartões" no menu abre Contas na aba Cartões** (`/contas?tab=cartoes`); a aba de Contas agora acompanha o endereço.
+
