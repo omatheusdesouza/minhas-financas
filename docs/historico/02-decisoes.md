@@ -135,3 +135,14 @@ Cada item: **decisão** — motivo.
 - **Avisos moderados restantes** (glob/minimatch no CLI, workbox, archiver do exceljs) são de ferramentas de montagem ou
   de leitura de arquivos em disco; não rodam no app. Ficam para quando as bibliotecas lançarem correção.
 
+## Importar PDF e movimento (01/11/2026)
+
+- **Seletor de arquivo sem `accept`:** Android e iPhone não conhecem o tipo .ofx e deixavam o arquivo cinza. O formato é
+  reconhecido pelos primeiros bytes (%PDF, PK = xlsx) ou pelo texto (OFX/CSV).
+- **PDF por texto, não por imagem:** pdf.js (versão legacy, para iPhones mais antigos) extrai o texto e as linhas são
+  remontadas pela altura. PDF escaneado (foto) não é lido; o app explica e sugere OFX/CSV. A senha do PDF não é guardada.
+- **Na prévia, tocar no valor troca gasto/ganho:** o sinal em PDF é heurístico; o usuário corrige antes de importar.
+- **Animações só na entrada (fill-mode backwards):** transform permanente na tela quebraria painéis com posição fixa.
+  Quem ativou "reduzir movimento" no aparelho não vê animações.
+- **Lista mostra só a subcategoria;** o caminho completo fica no título (ao passar o mouse).
+

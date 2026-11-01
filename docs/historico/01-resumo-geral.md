@@ -93,3 +93,11 @@ O Dependabot apontou 11 falhas (6 graves); as graves e a crítica vinham do CLI 
 Capacitor 8 com todos os plugins, Android SDK 36 (mínimo Android 7), Java 21 e iOS 15. O APK foi compilado no CI a partir
 de um ramo de teste antes de juntar ao main.
 
+## 8. Importar PDF e revisão visual (01/11/2026)
+
+O usuário relatou que importar CSV e OFX não funcionava e pediu PDF. Causa provável: o seletor filtrava por tipo e o celular
+não reconhece .ofx (arquivo cinza); e o CSV só era lido com o cabeçalho na 1ª linha. Agora o seletor aceita qualquer arquivo
+(o tipo é conferido pelo conteúdo), o CSV/Excel acha o cabeçalho em qualquer linha (ou as colunas pelo conteúdo) e há leitura
+de PDF (inclusive com senha) e de .xlsx. Também: saudação do Início compacta, listas com o nome curto da categoria,
+animações de entrada, toque e painéis (respeitando "reduzir movimento").
+

@@ -25,7 +25,7 @@ Versão publicada: **v1.1.24** (Capacitor 8, instalada pelo usuário em 01/11/20
 | RLS em todas as tabelas, buckets privados, sem segredos no repositório | Pronto |
 | Layout para computador (menu lateral, colunas, atalhos de teclado) | Pronto |
 | Alertas de limite por categoria (80% e 100%, aviso ao salvar, cartão no Início) | Pronto |
-| Importar extrato (OFX/CSV, prévia, categoria sugerida, sem duplicar, dar baixa, cartão → faturas) | Pronto |
+| Importar extrato (OFX, CSV e Excel de vários bancos, PDF com ou sem senha; prévia, categoria sugerida, trocar gasto/ganho, sem duplicar, dar baixa, cartão → faturas) | Pronto (falta testar com arquivos reais do usuário) |
 | Cartão de crédito com fatura (fechamento, vencimento, limite, parcelado, pagar fatura, conta no mês da fatura) | Pronto (migration 0007 aplicada) |
 | Reservas (adicionar, retirar, ajustar, enviar parte do salário; relatório "Enviado para reservas") | Pronto (migration 0006 aplicada) |
 | Capacitor 8 (Android SDK 36, mínimo Android 7; iOS 15 com UIScene; Java 21 no CI) | Pronto; v1.1.24 instalada pelo usuário. Falta conferir barras de status/navegação, PIN/digital, notificação e exportar |
@@ -33,7 +33,7 @@ Versão publicada: **v1.1.24** (Capacitor 8, instalada pelo usuário em 01/11/20
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
 | Proteção do site (CSP, não abre dentro de outro site, build sem comentários), senha com letras e números | Pronto |
 | Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada; painel confirmado pelo usuário no APK em 01/11/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
-| README atualizado, 94 testes automáticos, CI gerando APK | Pronto |
+| README atualizado, 105 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
 ## Parcial / não verificado

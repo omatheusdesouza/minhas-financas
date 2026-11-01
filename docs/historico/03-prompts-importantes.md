@@ -170,3 +170,11 @@ Cabeçalho com foto e nome/apelido; cartões com renda fixa total, gastos fixos,
 > atigindo por algum virus ou algo do tipo? Para eu ter gestão de pessoas que utilizam meu app?
 
 Resposta: "Sim!" ao plano (Fase 1 do site + migration 0008 + tela Gestor + verificação diária).
+
+## Importar PDF e revisão visual (01/11/2026)
+
+> Preciso que faça com que o importar extrato suba der formato em PDF, e organize o envio pois não está funcionando o envio
+> via csv nem o outro modelo de envio. Outra, organize o visual deste nome que está feio com muito espaço sobrando.
+> Reavalie toda intuição do app, verifique o que dá para melhorar no visual, verifique animações.
+> Pode fazer todas as mudanças agora com total altorização minha.
+
