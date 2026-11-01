@@ -3,7 +3,7 @@ import type { Backend } from './backend'
 import { splitInstallments } from './installments'
 import type { TableName, Tables } from './tables'
 import type {
-  Category, GoalContribution, InstallmentPlan, PaymentMethod, Profile, RecurringBill, SavingsGoal, Transaction,
+  AccountMove, Category, GoalContribution, InstallmentPlan, PaymentMethod, Profile, RecurringBill, SavingsGoal, Transaction,
 } from './types'
 
 /**
@@ -25,7 +25,8 @@ export type DataApi = Pick<Backend,
   | 'listPlans' | 'createPlan' | 'updatePlan' | 'deletePlan'
   | 'listRecurring' | 'saveRecurring' | 'deleteRecurring'
   | 'getProfile' | 'saveProfile'
-  | 'listGoals' | 'saveGoal' | 'deleteGoal' | 'listContributions' | 'saveContribution' | 'deleteContribution'>
+  | 'listGoals' | 'saveGoal' | 'deleteGoal' | 'listContributions' | 'saveContribution' | 'deleteContribution'
+  | 'listMoves' | 'saveMove' | 'deleteMove'>
 
 const byDateDesc = (a: Transaction, b: Transaction) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)
 const uid = () => crypto.randomUUID()
@@ -94,6 +95,10 @@ export function createLocalData(
       await localPatch<Transaction>('transactions', uses, { payment_method_id: null })
       await localPatch<InstallmentPlan>('installment_plans', uses, { payment_method_id: null })
       await localPatch<RecurringBill>('recurring_bills', uses, { payment_method_id: null })
+      // conta do caixa: transferências e ajustes dela somem; lançamentos pagos por ela ficam sem a conta
+      await localPatch<Transaction>('transactions', (t) => t.paid_from === id, { paid_from: null })
+      const moves = rows<AccountMove>('account_moves').filter((m) => m.from_id === id || m.to_id === id).map((m) => m.id)
+      if (moves.length) await tables.del('account_moves', moves)
     },
 
     async listTransactions(from, to) {
@@ -200,5 +205,11 @@ export function createLocalData(
     },
     saveContribution: (c) => upsert('goal_contributions', c),
     deleteContribution: (id) => remove('goal_contributions', id),
+
+    async listMoves() {
+      return rows<AccountMove>('account_moves').sort((a, b) => (a.date < b.date ? 1 : -1))
+    },
+    saveMove: (m) => upsert('account_moves', m),
+    deleteMove: (id) => remove('account_moves', id),
   }
 }

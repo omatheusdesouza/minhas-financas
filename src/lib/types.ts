@@ -20,11 +20,27 @@ export interface PaymentMethod {
   id: string
   name: string
   archived: boolean
-  /** cartão de crédito (migration 0007); ausente = forma comum */
-  type?: 'other' | 'credit_card'
+  /** cartão de crédito (migration 0007) ou conta com saldo (migration 0009); ausente = forma comum */
+  type?: 'other' | 'credit_card' | 'account'
   closing_day?: number | null
   due_day?: number | null
   credit_limit?: number | null
+  /** conta (caixa): saldo exato informado e a data dele */
+  opening_balance?: number | null
+  opening_date?: string | null
+}
+
+/** Transferência entre contas ou ajuste de saldo (migration 0009). Não é gasto nem ganho. */
+export interface AccountMove {
+  id: string
+  user_id?: string
+  kind: 'transfer' | 'adjust'
+  /** transferência: sai de from_id e entra em to_id; ajuste: só um dos dois */
+  from_id: string | null
+  to_id: string | null
+  amount: number
+  date: string
+  note: string | null
 }
 
 export interface Transaction {
@@ -46,6 +62,8 @@ export interface Transaction {
   receipt_path: string | null
   /** compra no cartão (migration 0007): dia da compra; `date` é o vencimento da fatura */
   purchase_date?: string | null
+  /** de qual conta saiu (ou em qual entrou) o dinheiro, quando a forma de pagamento não é uma conta (0009) */
+  paid_from?: string | null
 }
 
 export interface InstallmentPlan {

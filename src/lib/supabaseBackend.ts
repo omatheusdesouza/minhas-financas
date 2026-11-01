@@ -14,7 +14,8 @@ const num = (v: unknown) => (v == null ? null : Number(v))
 /** Colunas numeric chegam como texto em alguns casos: normaliza para número. */
 const NUMERIC: Partial<Record<TableName, string[]>> = {
   transactions: ['amount'],
-  payment_methods: ['credit_limit'],
+  payment_methods: ['credit_limit', 'opening_balance'],
+  account_moves: ['amount'],
   recurring_bills: ['amount'],
   installment_plans: ['total_amount'],
   categories: ['monthly_budget'],
@@ -22,7 +23,10 @@ const NUMERIC: Partial<Record<TableName, string[]>> = {
   goal_contributions: ['amount'],
 }
 /** Colunas de data (sem hora): sempre "AAAA-MM-DD". */
-const DATES = ['date', 'paid_at', 'first_due', 'start_month', 'end_month', 'generated_until', 'recurring_month', 'target_date']
+const DATES = ['date', 'paid_at', 'first_due', 'start_month', 'end_month', 'generated_until', 'recurring_month', 'target_date', 'opening_date']
+/** Tabelas de migrations mais novas: enquanto o banco não tiver a tabela, a sincronização simplesmente a ignora. */
+const OPTIONAL: TableName[] = ['account_moves']
+const missingTable = (e: unknown) => e instanceof RemoteError && e.kind === 'permanent'
 function normalize(t: TableName, r: any) {
   const out = { ...r }
   for (const c of NUMERIC[t] ?? []) out[c] = num(r[c])
@@ -224,6 +228,24 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
     if (res.error) throw classify(res)
     return res.data
   }
+  async function changedSinceAll(t: TableName, since: string | null) {
+    const out: any[] = []
+    for (let from = 0; ; from += PAGE) {
+      let q = sb.from(t).select('*').order('updated_at').range(from, from + PAGE - 1)
+      if (since) q = q.gt('updated_at', since)
+      const page = (await run(q)) as any[]
+      out.push(...page.map((r) => normalize(t, r)))
+      if (page.length < PAGE) return out
+    }
+  }
+  async function rowsOfAll(t: TableName, ownerId: string) {
+    const out: any[] = []
+    for (let from = 0; ; from += PAGE) {
+      const page = (await run(sb.from(t).select('*').eq('user_id', ownerId).order('updated_at').range(from, from + PAGE - 1))) as any[]
+      out.push(...page.map((r) => normalize(t, r)))
+      if (page.length < PAGE) return out
+    }
+  }
   return {
     async upsert(t, rows) {
       await run(sb.from(t).upsert(rows.map(forUpload), { onConflict: t === 'profiles' ? 'user_id' : 'id' }))
@@ -232,14 +254,15 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
       await run(sb.from(t).delete().in(t === 'profiles' ? 'user_id' : 'id', ids))
     },
     async changedSince(t, since) {
-      const out: any[] = []
-      for (let from = 0; ; from += PAGE) {
-        let q = sb.from(t).select('*').order('updated_at').range(from, from + PAGE - 1)
-        if (since) q = q.gt('updated_at', since)
-        const page = (await run(q)) as any[]
-        out.push(...page.map((r) => normalize(t, r)))
-        if (page.length < PAGE) return out
+      if (OPTIONAL.includes(t)) {
+        try {
+          return await changedSinceAll(t, since)
+        } catch (e) {
+          if (missingTable(e)) return []
+          throw e
+        }
       }
+      return changedSinceAll(t, since)
     },
     async deletedSince(since) {
       return (await run(sb.from('deleted_rows').select('table_name,row_id,deleted_at').gt('deleted_at', since).order('deleted_at').limit(5000))) as any[]
@@ -249,12 +272,15 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
       return r ? normalize(t, r) : null
     },
     async rowsOf(t, ownerId) {
-      const out: any[] = []
-      for (let from = 0; ; from += PAGE) {
-        const page = (await run(sb.from(t).select('*').eq('user_id', ownerId).order('updated_at').range(from, from + PAGE - 1))) as any[]
-        out.push(...page.map((r) => normalize(t, r)))
-        if (page.length < PAGE) return out
+      if (OPTIONAL.includes(t)) {
+        try {
+          return await rowsOfAll(t, ownerId)
+        } catch (e) {
+          if (missingTable(e)) return []
+          throw e
+        }
       }
+      return rowsOfAll(t, ownerId)
     },
     async findRecurring(billId, month) {
       const r = await run(sb.from('transactions').select('*').eq('recurring_bill_id', billId).eq('recurring_month', month).maybeSingle())

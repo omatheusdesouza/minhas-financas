@@ -1,7 +1,7 @@
 import type { UiPrefs } from './prefs'
 import type { SyncStatus } from './sync'
 import type {
-  Bucket, FamilyInvite, FamilyMember, FamilyRole, Space, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
+  AccountMove, Bucket, FamilyInvite, FamilyMember, FamilyRole, Space, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
   RecurringBill, SavingsGoal, Transaction,
 } from './types'
 
@@ -74,6 +74,11 @@ export interface Backend {
   listContributions(): Promise<GoalContribution[]>
   saveContribution(c: Draft<GoalContribution>): Promise<GoalContribution>
   deleteContribution(id: string): Promise<void>
+
+  /** Caixa: transferências entre contas e ajustes de saldo (migration 0009) */
+  listMoves(): Promise<AccountMove[]>
+  saveMove(m: Draft<AccountMove>): Promise<AccountMove>
+  deleteMove(id: string): Promise<void>
 
   /** Envia um arquivo para a pasta do usuário no bucket privado; devolve o caminho salvo. */
   uploadFile(bucket: Bucket, name: string, file: Blob): Promise<string>

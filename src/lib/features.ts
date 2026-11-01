@@ -18,3 +18,5 @@ function schemaAtLeast(version: string): Promise<boolean> {
 export const reservesAvailable = () => schemaAtLeast('0006')
 /** Cartão de crédito com fatura (migration 0007). */
 export const cardsAvailable = () => schemaAtLeast('0007')
+/** Caixa: contas com saldo, transferências e ajustes (migration 0009). */
+export const cashAvailable = () => schemaAtLeast('0009')

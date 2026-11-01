@@ -279,7 +279,7 @@ function pickData(d: DataApi): DataApi {
     'listTransactions', 'listUnpaid', 'listPlanTransactions', 'saveTransaction', 'updateTransactions', 'deleteTransaction',
     'insertRecurringTransactions', 'listPlans', 'createPlan', 'updatePlan', 'deletePlan', 'listRecurring', 'saveRecurring',
     'deleteRecurring', 'getProfile', 'saveProfile', 'listGoals', 'saveGoal', 'deleteGoal', 'listContributions',
-    'saveContribution', 'deleteContribution',
+    'saveContribution', 'deleteContribution', 'listMoves', 'saveMove', 'deleteMove',
   ]
   return Object.fromEntries(names.map((n) => [n, (d as any)[n]])) as DataApi
 }

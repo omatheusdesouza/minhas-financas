@@ -8,7 +8,7 @@ import { openDB, type IDBPDatabase } from 'idb'
 
 export const TABLES = [
   'categories', 'payment_methods', 'savings_goals', 'installment_plans', 'recurring_bills',
-  'transactions', 'goal_contributions', 'profiles',
+  'transactions', 'goal_contributions', 'profiles', 'account_moves',
 ] as const
 export type TableName = (typeof TABLES)[number]
 
@@ -136,11 +136,12 @@ export interface OutboxOp {
 }
 
 export async function openLocalDb(name: string): Promise<LocalDb> {
-  const db: IDBPDatabase = await openDB(name, 1, {
+  // versão 2: tabela account_moves (caixa). Cria só o que falta, sem mexer no que já está guardado.
+  const db: IDBPDatabase = await openDB(name, 2, {
     upgrade(d) {
-      for (const t of TABLES) d.createObjectStore(t)
-      d.createObjectStore('outbox', { keyPath: 'seq', autoIncrement: true })
-      d.createObjectStore('meta')
+      for (const t of TABLES) if (!d.objectStoreNames.contains(t)) d.createObjectStore(t)
+      if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'seq', autoIncrement: true })
+      if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta')
     },
   })
   return {
