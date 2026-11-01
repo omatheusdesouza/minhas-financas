@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Instalar dependências
         run: npm ci
@@ -70,6 +70,8 @@ jobs:
           path: Fynvault.apk
 
       - name: Publicar na página de Releases
+        # só a partir do main (execuções manuais em outros ramos servem para testar a compilação)
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v1.1.${{ github.run_number }}
