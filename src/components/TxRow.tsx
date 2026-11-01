@@ -17,6 +17,17 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
   const due = t.paid || onCard ? null : dueStatus(t)
   const missing = needsAmount(t)
 
+  const chips = (
+    <>
+      {onCard && <span className={`chip ${t.paid ? 'good' : ''}`}>{t.paid ? 'Fatura paga' : `Fatura ${fmt.short(t.date)}`}</span>}
+      {due && (
+        <span className={`chip ${due.tone}`}>
+          {t.kind === 'income' ? (due.days < 0 ? 'Atrasado' : 'A receber') : due.label}
+        </span>
+      )}
+    </>
+  )
+
   return (
     <div className={`tx-row ${due ? `due-${due.tone}` : ''}`}>
       <button className="tx-main" onClick={() => openEditor(t)}>
@@ -37,17 +48,13 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
               t.receipt_path && '📎',
             ].filter(Boolean).join(' · ')}
           </span>
+          {(onCard || due) && <span className="tx-chips-inline">{chips}</span>}
         </span>
         <span className="tx-right">
           {missing
-            ? <span className="tx-amount muted">valor a informar</span>
+            ? <span className="tx-amount muted">a informar</span>
             : <span className={`tx-amount ${t.kind === 'expense' ? 'neg' : 'pos'}`}>{sign} {money(t.amount ?? 0)}</span>}
-          {onCard && <span className={`chip ${t.paid ? 'good' : ''}`}>{t.paid ? 'Fatura paga' : `Fatura ${fmt.short(t.date)}`}</span>}
-          {due && (
-            <span className={`chip ${due.tone}`}>
-              {t.kind === 'income' ? (due.days < 0 ? 'Atrasado' : 'A receber') : due.label}
-            </span>
-          )}
+          {(onCard || due) && <span className="tx-chips">{chips}</span>}
         </span>
       </button>
       {!t.paid && canEdit && !onCard && (

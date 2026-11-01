@@ -60,7 +60,7 @@ export function Transactions() {
   return (
     <div className="screen narrow">
       <header className="top"><h1>Lançamentos</h1>
-        {canEdit && <Link to="/lancamentos/importar" className="btn ghost import-link"><Icon name="download" size={18} /> Importar extrato</Link>}</header>
+        {canEdit && <Link to="/lancamentos/importar" className="btn ghost import-link"><Icon name="download" size={18} /> <span>Importar<span className="hide-narrow"> extrato</span></span></Link>}</header>
       <PeriodPicker value={p} onChange={setP} />
 
       <div className="search-row">
