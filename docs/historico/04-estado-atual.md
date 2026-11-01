@@ -1,6 +1,6 @@
 # 04 — Estado atual (31/10/2026)
 
-Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0008 aplicadas**.
+Versão publicada: **v1.1.24** (Capacitor 8, instalada pelo usuário em 01/11/2026); antes, **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: migrations **0001–0008 aplicadas**.
 
 ## Pronto
 
@@ -28,11 +28,11 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | Importar extrato (OFX/CSV, prévia, categoria sugerida, sem duplicar, dar baixa, cartão → faturas) | Pronto |
 | Cartão de crédito com fatura (fechamento, vencimento, limite, parcelado, pagar fatura, conta no mês da fatura) | Pronto (migration 0007 aplicada) |
 | Reservas (adicionar, retirar, ajustar, enviar parte do salário; relatório "Enviado para reservas") | Pronto (migration 0006 aplicada) |
-| Capacitor 8 (Android SDK 36, mínimo Android 7; iOS 15 com UIScene; Java 21 no CI) | Pronto; APK compilado no CI, falta testar no celular |
+| Capacitor 8 (Android SDK 36, mínimo Android 7; iOS 15 com UIScene; Java 21 no CI) | Pronto; v1.1.24 instalada pelo usuário. Falta conferir barras de status/navegação, PIN/digital, notificação e exportar |
 | Dependências atualizadas (segurança), CI em Node 22, backup semanal criptografado e suporte à chave privada do Android | Pronto (backup e chave privada dependem de secrets no GitHub) |
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
 | Proteção do site (CSP, não abre dentro de outro site, build sem comentários), senha com letras e números | Pronto |
-| Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada em 31/10/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
+| Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada; painel confirmado pelo usuário no APK em 01/11/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
 | README atualizado, 94 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 
@@ -68,7 +68,7 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
    `skipWaiting`/`clientsClaim` no `vite.config.ts` (já corrigido no `main`), senão a versão nova fica esperando até fechar
    todas as janelas do app.
 
-1. Confirmar o cadastro do gestor (README › 5) e ligar Dependabot alerts e Secret scanning no GitHub.
+1. Ligar Dependabot alerts e Secret scanning no GitHub.
    Opcional no Supabase: CAPTCHA no login, verificação em duas etapas (MFA) e Leaked password protection (plano Pro).
 2. Instalar a v1.1.10 por cima e testar offline (modo avião → lançar/pagar → voltar → "Tudo sincronizado ✓").
 3. Testar o modo família com uma segunda conta (visualizar, editar, remover).
