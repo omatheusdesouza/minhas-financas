@@ -33,7 +33,7 @@ export function TxRow({ t, showDate }: { t: Transaction; showDate?: boolean }) {
                 ? (t.description.trim().toLowerCase() === idx.short(t.category_id).toLowerCase() ? null : idx.short(t.category_id))
                 : idx.get(t.category_id)?.parent_id ? idx.short(idx.get(t.category_id)!.parent_id) : null,
               pm && `${onCard ? '💳 ' : ''}${pm.name}`,
-              t.recurring_bill_id && '🔁',
+              t.recurring_bill_id && '↻ fixa',
               t.receipt_path && '📎',
             ].filter(Boolean).join(' · ')}
           </span>
