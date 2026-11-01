@@ -1,3 +1,4 @@
+import type { UiPrefs } from './prefs'
 import type { SyncStatus } from './sync'
 import type {
   Bucket, FamilyInvite, FamilyMember, FamilyRole, Space, Category, Draft, GoalContribution, InstallmentPlan, NewInstallmentPlan, PaymentMethod, Profile,
@@ -10,6 +11,8 @@ export interface User {
   /** versão dos Termos e da Política de Privacidade aceita (LGPD) e quando */
   termsVersion?: string | null
   termsAcceptedAt?: string | null
+  /** personalização do Início e da navegação guardada na conta (vale em todos os aparelhos) */
+  prefs?: UiPrefs | null
 }
 
 /** Tudo o que o app precisa do armazenamento. Há duas implementações: nuvem e demonstração. */
@@ -21,6 +24,8 @@ export interface Backend {
   signIn(email: string, password: string): Promise<void>
   /** termsVersion: versão dos Termos e da Política aceita ao criar a conta */
   signUp(email: string, password: string, termsVersion: string): Promise<{ needsConfirmation: boolean }>
+  /** Guarda a personalização na conta (modo nuvem; precisa de internet, senão fica só no aparelho). */
+  savePrefs?(p: UiPrefs): Promise<void>
   /** Registra o aceite de uma nova versão dos Termos e da Política. */
   acceptTerms(version: string): Promise<void>
   /** Apaga a conta, todos os dados e arquivos (LGPD, art. 18, VI). Precisa de internet no modo nuvem. */

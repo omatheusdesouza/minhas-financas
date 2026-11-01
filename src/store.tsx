@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from './lib/api'
 import { FirstSyncOfflineError, SchemaOutdatedError, type User } from './lib/backend'
+import { loadLocalPrefs, newest, saveLocalPrefs, type UiPrefs } from './lib/prefs'
 import { CategoryIndex, generateRecurring, seedIfEmpty } from './lib/services'
 import type { SyncStatus } from './lib/sync'
 import type { Category, PaymentMethod, Profile, Space, Transaction } from './lib/types'
@@ -49,6 +50,9 @@ interface AppState {
   payTarget: Transaction | null
   openPay: (t: Transaction) => void
   closePay: () => void
+  /** Personalização do Início e da navegação (aparelho + conta) */
+  prefs: UiPrefs
+  setPrefs: (p: UiPrefs) => void
 }
 
 const Ctx = createContext<AppState | null>(null)
@@ -117,6 +121,25 @@ export function AppProvider({ user, children, onboarding }: {
   const [version, setVersion] = useState(0)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [editor, setEditor] = useState<TxEditor | null>(null)
+  const [prefs, setPrefsState] = useState<UiPrefs>(() => newest(loadLocalPrefs(user.id), user.prefs))
+
+  // Alterado em outro aparelho (chega com o login atualizado): adota se for mais recente
+  useEffect(() => {
+    setPrefsState((cur) => {
+      const n = newest(cur, user.prefs)
+      if (n !== cur) saveLocalPrefs(user.id, n)
+      // alterado aqui sem internet: envia agora para a conta
+      else if (cur.updatedAt && cur.updatedAt !== user.prefs?.updatedAt) api.savePrefs?.(cur).catch(() => {})
+      return n
+    })
+  }, [user.id, user.prefs])
+
+  const setPrefs = useCallback((p: UiPrefs) => {
+    const next = { ...p, updatedAt: new Date().toISOString() }
+    setPrefsState(next)
+    saveLocalPrefs(user.id, next)
+    api.savePrefs?.(next).catch(() => {})
+  }, [user.id])
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'ok') => {
     const id = Date.now() + Math.random()
@@ -219,6 +242,7 @@ export function AppProvider({ user, children, onboarding }: {
     payTarget,
     openPay: (t) => setPayTarget(t),
     closePay: () => setPayTarget(null),
+    prefs, setPrefs,
   }
   const onboarded = Boolean(profile?.onboarding_completed_at)
 

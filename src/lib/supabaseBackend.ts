@@ -75,6 +75,7 @@ function toUser(u: { id: string; email?: string; user_metadata?: Record<string, 
   return u ? {
     id: u.id, email: u.email ?? '',
     termsVersion: u.user_metadata?.terms_version ?? null, termsAcceptedAt: u.user_metadata?.terms_accepted_at ?? null,
+    prefs: u.user_metadata?.ui_prefs ?? null,
   } : null
 }
 
@@ -96,7 +97,7 @@ export function createSupabase(url: string, key: string): SupabaseClient {
 
 export type AuthAndFiles = Pick<Backend,
   | 'getUser' | 'onAuthChange' | 'signIn' | 'signUp' | 'resetPassword' | 'verifyRecovery' | 'updatePassword' | 'signOut'
-  | 'acceptTerms' | 'deleteAccount' | 'schemaVersion'
+  | 'acceptTerms' | 'savePrefs' | 'deleteAccount' | 'schemaVersion'
   | 'uploadFile' | 'fileUrl' | 'removeFile'>
 
 export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
@@ -128,6 +129,10 @@ export function supabaseAuthAndFiles(sb: SupabaseClient): AuthAndFiles {
         options: { data: { terms_version: termsVersion, terms_accepted_at: new Date().toISOString() } },
       }))
       return { needsConfirmation: !data.session }
+    },
+    async savePrefs(prefs) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+      check(await sb.auth.updateUser({ data: { ui_prefs: prefs } }))
     },
     async acceptTerms(version) {
       check(await sb.auth.updateUser({ data: { terms_version: version, terms_accepted_at: new Date().toISOString() } }))
