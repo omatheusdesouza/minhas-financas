@@ -34,6 +34,7 @@ Versão publicada: **v1.1.26** (instalada pelo usuário em 01/11/2026; Capacitor
 | Proteção do site (CSP, não abre dentro de outro site, build sem comentários), senha com letras e números | Pronto |
 | Painel do gestor (pessoas, acessos, alertas, bloquear/excluir conta), limite no convite da família, verificação diária no GitHub | Pronto (migration 0008 aplicada; painel confirmado pelo usuário no APK em 01/11/2026); aviso por e-mail depende do secret `SUPABASE_DB_URL` |
 | Dashboard personalizável: blocos do Início (ligar, desligar, ordenar), barra de baixo e menu lateral escolhidos pela pessoa, teclas 1–9 seguindo o menu | Pronto (salvo na conta; v1.1.26 instalada e testada pelo usuário em 01/11/2026) |
+| Visual luxo e minimalista (serifada nos títulos e valores, tons sóbrios, status discretos) | Pronto (aprovado pelo usuário em 01/11/2026) |
 | README atualizado, 111 testes automáticos, CI gerando APK | Pronto |
 | Versão web instalável (PWA) no GitHub Pages: computador e iPhone (Adicionar à Tela de Início) | Pronto (Site URL do Supabase ajustada; testado no iPhone em 30/10/2026) |
 

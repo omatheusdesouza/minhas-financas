@@ -108,3 +108,9 @@ Pedido: "uma dashboard ... definindo o que a pessoa quer escolher para navegar".
 da barra de baixo, com o Início fixo; itens e ordem do menu lateral, com Cartões, Importar e Família como opções). Tela
 Ajustes › Personalizar. Salvo no aparelho e na conta.
 
+## 10. Visual luxo e minimalista (01/11/2026)
+
+Pedido: "deixar o mais luxuoso e minimalista possível". Feito num ramo (`visual-luxo`) com capturas de antes e depois;
+o usuário aprovou e foi publicado. Serifada (Cormorant, números alinhados) nos títulos e valores grandes, tons mais
+sóbrios, status como texto com ponto, ícones neutros, cartões leves, botão + azul com dourado.
+

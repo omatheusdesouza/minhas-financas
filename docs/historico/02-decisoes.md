@@ -156,3 +156,12 @@ Cada item: **decisão** — motivo.
   coluna. Se uma coluna ficar vazia, o Início vira uma coluna só.
 - **"Cartões" no menu abre Contas na aba Cartões** (`/contas?tab=cartoes`); a aba de Contas agora acompanha o endereço.
 
+## Visual luxo e minimalista (01/11/2026)
+
+- **Camada de acabamento no fim do `styles.css`** (seção "Acabamento") em vez de reescrever o arquivo: fácil de ajustar ou desfazer.
+- **Serifada só em títulos e valores grandes**, sempre com `lining-nums` (a Cormorant usa números "antigos" por padrão);
+  textos, listas e formulários continuam na Inter para leitura fácil. Rótulos longos de formulário não ficam em maiúsculas.
+- **Cor só onde tem significado:** status viraram texto com ponto; conta em dia sem faixa lateral; ícones de categoria neutros.
+- **Botão + azul com dourado** no claro e dourado no escuro (tokens `--fab-bg`/`--fab-fg`).
+- Mudanças visuais grandes: primeiro em ramo, com antes/depois para aprovação.
+

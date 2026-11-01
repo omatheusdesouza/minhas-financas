@@ -184,3 +184,9 @@ Resposta: "Sim!" ao plano (Fase 1 do site + migration 0008 + tela Gestor + verif
 
 Resposta à pergunta sobre o tipo: "Os dois juntos" (Início personalizável + atalhos de navegação).
 
+## Visual (01/11/2026)
+
+> Gostaria de focar mais ainda no visual, quero deixar o mais luxuoso e minimalista possivel.
+
+Depois das capturas de antes/depois: "Aprovado, pode publicar".
+
