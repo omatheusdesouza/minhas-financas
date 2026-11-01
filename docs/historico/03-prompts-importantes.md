@@ -199,3 +199,10 @@ Depois das capturas de antes/depois: "Aprovado, pode publicar".
 > Pode seguir com o plano e a migration 0009 e o tema que foi atualizado ficou muito grande no celular e as caixas ficaram
 > vazadas cortando informações. Organize isso e siga para o projeto. Tem toda minha autorização!
 
+## Cartão ligado ao banco (01/11/2026)
+
+> Quero informar o cartão para dizer de qual banco é. Desta forma tudo fica atrelado perfeitamente, se eu passei o cartão
+> de debito desconta de qual banco... Etc.
+
+Resposta ao plano da migration 0010: "Pode".
+

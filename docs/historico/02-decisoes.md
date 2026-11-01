@@ -178,3 +178,10 @@ Cada item: **decisão** — motivo.
 - **Itens novos de personalização** (Caixa) entram logo depois do vizinho padrão, mesmo com a ordem personalizada.
 - Fora do escopo por enquanto: enviar dinheiro para uma Reserva descontar de uma conta.
 
+## Cartão ligado ao banco (01/11/2026)
+
+- **Coluna `account_id` na própria forma de pagamento** (sem tipo novo "débito"): débito, Pix, vale... são "outras formas"
+  ligadas a uma conta. Gatilho no banco garante que a ligação aponta para uma conta.
+- **Débito/Pix ligado não pergunta a conta ao pagar;** crédito ligado sugere a conta da fatura, mas deixa trocar.
+- **Prioridade:** forma é conta → conta escolhida ao pagar (`paid_from`) → conta ligada.
+

@@ -122,3 +122,9 @@ fontes que se adaptam à largura e linhas compactas (status embaixo da descriç�
 Depois, o **Caixa** (migration 0009): contas com saldo exato informado, total, escolha da conta ao lançar/pagar/receber e na
 fatura do cartão, transferências e ajustes que não contam como gasto ou ganho, bloco no Início e item no menu.
 
+## 12. Cartão ligado ao banco (01/11/2026)
+
+O usuário cadastrou as contas e pediu para informar de qual banco é cada cartão. Migration 0010: cada cartão ou forma de
+pagamento pode ser ligado a uma conta do caixa. Débito/Pix ligados descontam sozinhos da conta; a fatura do crédito
+sugere a conta ligada ao pagar (dá para trocar). Aviso antes de ligar uma forma que já tem lançamentos pagos no período.
+

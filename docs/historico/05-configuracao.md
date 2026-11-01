@@ -52,6 +52,7 @@ Todas são idempotentes e só acrescentam. Conferir: `select * from app_migratio
 | `0006_reservas.sql` | reservas (`savings_goals` sem alvo), `goal_contributions.kind`, `app_schema_version()` |
 | `0007_cartao_credito.sql` | cartão (`type`, `closing_day`, `due_day`, `credit_limit`), `transactions.purchase_date` |
 | `0009_caixa_contas.sql` | contas do caixa (`payment_methods.type = 'account'`, `opening_balance`, `opening_date`), `transactions.paid_from`, tabela `account_moves` (transferências e ajustes, RLS de família) |
+| `0010_cartao_ligado_conta.sql` | `payment_methods.account_id` (cartão/forma ligada a uma conta do caixa; gatilho `check_account_link`) |
 | `0008_gestor_seguranca.sql` | `app_admins`, `security_events`, `security_alerts`; `log_security_event`, `join_family` (limite de convite), funções `admin_*`; funções antigas fechadas para `anon` |
 
 ## Tabelas (schema `public`)
