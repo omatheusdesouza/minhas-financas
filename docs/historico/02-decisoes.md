@@ -185,3 +185,11 @@ Cada item: **decisão** — motivo.
 - **Débito/Pix ligado não pergunta a conta ao pagar;** crédito ligado sugere a conta da fatura, mas deixa trocar.
 - **Prioridade:** forma é conta → conta escolhida ao pagar (`paid_from`) → conta ligada.
 
+## Efeito vidro (01/11/2026)
+
+- Pedido: "glass effect apenas nas bordas e botões". **Bordas:** filete de luz em degradê (branco no alto à esquerda →
+  dourado embaixo à direita) por dentro da linha fina do cartão, com máscara CSS; o miolo continua sólido (leitura).
+- **Botões:** translúcidos com reflexo no topo; seletores como trilho rebaixado com a opção em relevo.
+- **Desfoque (`backdrop-filter`) só no que flutua** (botão +, barra de baixo, botões do topo, seletores, avisos): em listas
+  pesaria no celular sem diferença visível.
+

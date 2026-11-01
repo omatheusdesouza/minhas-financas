@@ -206,3 +206,7 @@ Depois das capturas de antes/depois: "Aprovado, pode publicar".
 
 Resposta ao plano da migration 0010: "Pode".
 
+## Vidro (01/11/2026)
+
+> Aplique o glass efect no meu app. Apenas nas bordas e botões.
+
