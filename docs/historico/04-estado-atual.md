@@ -28,6 +28,7 @@ Versão publicada: **v1.1.10** (`Fynvault.apk` na página de Releases). Banco: m
 | Importar extrato (OFX/CSV, prévia, categoria sugerida, sem duplicar, dar baixa, cartão → faturas) | Pronto |
 | Cartão de crédito com fatura (fechamento, vencimento, limite, parcelado, pagar fatura, conta no mês da fatura) | Pronto (migration 0007 aplicada) |
 | Reservas (adicionar, retirar, ajustar, enviar parte do salário; relatório "Enviado para reservas") | Pronto (migration 0006 aplicada) |
+| Capacitor 8 (Android SDK 36, mínimo Android 7; iOS 15 com UIScene; Java 21 no CI) | Pronto; APK compilado no CI, falta testar no celular |
 | Dependências atualizadas (segurança), CI em Node 22, backup semanal criptografado e suporte à chave privada do Android | Pronto (backup e chave privada dependem de secrets no GitHub) |
 | LGPD: Política de Privacidade, Termos, aceite, baixar dados, excluir conta | Pronto (migration 0005 aplicada; revisão jurídica recomendada) |
 | Proteção do site (CSP, não abre dentro de outro site, build sem comentários), senha com letras e números | Pronto |

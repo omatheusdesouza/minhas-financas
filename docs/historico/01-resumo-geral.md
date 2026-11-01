@@ -87,3 +87,9 @@ próprio app (migration 0008), com pessoas, acessos e senhas erradas, alertas au
 uma verificação diária no GitHub que abre issue (sem dados pessoais) quando há alerta novo ou biblioteca com falha.
 Política de Privacidade atualizada (registros de segurança por 90 dias) e versão dos termos trocada (novo aceite).
 
+## 7. Capacitor 8 (01/11/2026)
+
+O Dependabot apontou 11 falhas (6 graves); as graves e a crítica vinham do CLI do Capacitor 6. O app foi atualizado para o
+Capacitor 8 com todos os plugins, Android SDK 36 (mínimo Android 7), Java 21 e iOS 15. O APK foi compilado no CI a partir
+de um ramo de teste antes de juntar ao main.
+

@@ -202,7 +202,7 @@ npm run build && npx cap sync   # atualiza os projetos android/ e ios/
 npx cap open android    # abre no Android Studio
 ```
 
-- **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 6. Gráficos com Recharts.
+- **Tecnologia:** React + TypeScript + Vite, empacotado como app nativo com Capacitor 8 (Android 7 ou mais novo; iPhone com iOS 15 ou mais novo). Gráficos com Recharts.
 - **Versão web (PWA):** `vite-plugin-pwa` gera o manifesto e o service worker (app guardado no aparelho, atualização
   automática). O service worker só é registrado fora do app nativo (`src/main.tsx`). O workflow `web.yml` publica
   `dist/` no GitHub Pages; o `android.yml` continua gerando o APK. Layout de computador: regras `@media (min-width: 1024px)`

@@ -1,6 +1,6 @@
 # Fynvault — instruções para o Claude
 
-App de finanças pessoais (React + TypeScript + Vite + Capacitor 6, Supabase). Leia o README para a visão geral.
+App de finanças pessoais (React + TypeScript + Vite + Capacitor 8, Supabase). Leia o README para a visão geral.
 
 ## Histórico do projeto
 

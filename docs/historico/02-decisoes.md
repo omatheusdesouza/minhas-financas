@@ -125,3 +125,13 @@ Cada item: **decisão** — motivo.
 - **Issue sem dados pessoais:** o repositório é público; os detalhes ficam só no painel.
 - **Excluir conta pelo gestor não apaga fotos/comprovantes:** o Supabase não deixa apagar arquivos por SQL; o painel avisa a pasta.
 
+## Capacitor 8 (01/11/2026)
+
+- **Migração 6 → 7 → 8 com `cap migrate`** (a ferramenta só sobe uma versão por vez); wrapper do Gradle ajustado à mão (8.14.3).
+- **Mínimo Android 7 (API 24)**, exigência do Capacitor 8. Celulares com Android 5/6 deixam de receber atualizações.
+- **Tela de ponta a ponta no Android 15+:** cor e sobreposição da barra de status deixaram de ser configuráveis; o app já
+  usa `viewport-fit=cover` e `env(safe-area-inset-*)`, que o Capacitor 8 preenche (`SystemBars`, padrão `css`).
+- **PIN salvo continua valendo:** o armazenamento seguro 8 usa o mesmo formato e prefixo do 6.
+- **Avisos moderados restantes** (glob/minimatch no CLI, workbox, archiver do exceljs) são de ferramentas de montagem ou
+  de leitura de arquivos em disco; não rodam no app. Ficam para quando as bibliotecas lançarem correção.
+
