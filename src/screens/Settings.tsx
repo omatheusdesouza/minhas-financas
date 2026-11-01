@@ -69,6 +69,7 @@ export function Settings() {
           <Link to="/reservas"><span className="menu-emoji">🛟</span> Reservas <Icon name="right" className="end" /></Link>
           <Link to="/metas"><span className="menu-emoji">🎯</span> Metas de economia <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/familia"><span className="menu-emoji">👨‍👩‍👧</span> Família (compartilhar) <Icon name="right" className="end" /></Link>
+          <Link to="/ajustes/personalizar"><span className="menu-emoji">🧩</span> Personalizar Início e navegação <Icon name="right" className="end" /></Link>
           {admin && <Link to="/gestor"><span className="menu-emoji">🛡️</span> Painel do gestor <Icon name="right" className="end" /></Link>}
           <Link to="/ajustes/categorias"><Icon name="tag" /> Categorias e limites de gasto <Icon name="right" className="end" /></Link>
           <Link to="/ajustes/pagamentos"><Icon name="card" /> Formas de pagamento e cartões <Icon name="right" className="end" /></Link>

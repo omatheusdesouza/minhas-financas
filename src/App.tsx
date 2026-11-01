@@ -1,11 +1,12 @@
 import { App as CapApp } from '@capacitor/app'
-import { lazy, Suspense, useEffect, useState } from 'react'
-import { HashRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Fragment, lazy, Suspense, useEffect, useState } from 'react'
+import { HashRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { TermsGate } from './components/Legal'
 import { PaySheet } from './components/PaySheet'
 import { ShortcutsSheet, Sidebar } from './components/Sidebar'
 import { TxEditor } from './components/TxEditor'
+import { useNav } from './components/useNav'
 import { api } from './lib/api'
 import { LEGAL_VERSION } from './lib/legal'
 import { initNotifications, syncReminders } from './lib/notify'
@@ -22,6 +23,7 @@ import { Reports } from './screens/Reports'
 import { ReserveDetailScreen, ReservesScreen } from './screens/Reserves'
 import { CategoriesScreen, PaymentMethodsScreen, ProfileScreen, Settings } from './screens/Settings'
 import { Transactions } from './screens/Transactions'
+import { CustomizeScreen } from './screens/Customize'
 import { LockProvider } from './lockContext'
 import { AppProvider, useApp } from './store'
 
@@ -62,6 +64,7 @@ function Shell() {
   const { editor, openEditor, closeEditor, payTarget, closePay, version, bump, canEdit } = useApp()
   const navigate = useNavigate()
   const [help, setHelp] = useState(false)
+  const { tabs, shortcuts, activeTab } = useNav()
 
   // Lembretes: abrir a tela certa ao tocar na notificação
   useEffect(() => {
@@ -91,7 +94,7 @@ function Shell() {
         key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey,
         targetTag: el?.tagName, targetEditable: el?.isContentEditable,
         dialogOpen: !!document.querySelector('.sheet-backdrop'),
-      })
+      }, shortcuts)
       if (!action) return
       e.preventDefault()
       if (action.type === 'new') { if (canEdit) openEditor() }
@@ -104,7 +107,7 @@ function Shell() {
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [navigate, openEditor, canEdit])
+  }, [navigate, openEditor, canEdit, shortcuts])
 
   return (
     <div className="app">
@@ -121,6 +124,7 @@ function Shell() {
           <Route path="/ajustes/pagamentos" element={<PaymentMethodsScreen />} />
           <Route path="/ajustes/perfil" element={<ProfileScreen />} />
           <Route path="/ajustes/familia" element={<FamilyScreen />} />
+          <Route path="/ajustes/personalizar" element={<CustomizeScreen />} />
           <Route path="/metas" element={<GoalsScreen />} />
           <Route path="/metas/:id" element={<GoalDetailScreen />} />
           <Route path="/reservas" element={<ReservesScreen />} />
@@ -131,16 +135,19 @@ function Shell() {
       </main>
 
       <nav className="tabbar" aria-label="Navegação principal">
-        <NavLink to="/" end><Icon name="home" /><span>Início</span></NavLink>
-        <NavLink to="/lancamentos"><Icon name="list" /><span>Lançamentos</span></NavLink>
-        {canEdit
-          ? <button className="fab" onClick={() => openEditor()} aria-label="Novo lançamento"><Icon name="plus" size={28} /></button>
-          : <span className="fab-off" aria-hidden="true" />}
-        <NavLink to="/contas"><Icon name="bills" /><span>Contas</span></NavLink>
-        <NavLink to="/relatorios"><Icon name="chart" /><span>Relatórios</span></NavLink>
+        {tabs.map((t, i) => (
+          <Fragment key={t.id}>
+            {i === 2 && (canEdit
+              ? <button className="fab" onClick={() => openEditor()} aria-label="Novo lançamento"><Icon name="plus" size={28} /></button>
+              : <span className="fab-off" aria-hidden="true" />)}
+            <Link to={t.to} className={activeTab === t.id ? 'active' : ''} aria-current={activeTab === t.id ? 'page' : undefined}>
+              <Icon name={t.icon} /><span>{t.short}</span>
+            </Link>
+          </Fragment>
+        ))}
       </nav>
 
-      {help && <ShortcutsSheet onClose={() => setHelp(false)} />}
+      {help && <ShortcutsSheet items={shortcuts} onClose={() => setHelp(false)} />}
       {payTarget && <PaySheet key={payTarget.id} tx={payTarget} onClose={closePay} />}
       {editor && <TxEditor key={editor.tx?.id ?? 'new'} initial={editor.tx} initialMode={editor.mode} onClose={closeEditor} />}
     </div>

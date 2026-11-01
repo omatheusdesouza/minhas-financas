@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CardsTab } from '../components/CardsTab'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from '../components/Fields'
@@ -17,8 +17,12 @@ import { useApp, useLoad } from '../store'
 type Tab = 'pagar' | 'cartoes' | 'parcelas' | 'fixas'
 
 export function Bills() {
-  const [params] = useSearchParams()
-  const [tab, setTab] = useState<Tab>(() => (['pagar', 'cartoes', 'parcelas', 'fixas'].includes(params.get('tab') ?? '') ? params.get('tab') as Tab : 'pagar'))
+  const [params, setParams] = useSearchParams()
+  const fromUrl = (['pagar', 'cartoes', 'parcelas', 'fixas'] as Tab[]).find((t) => t === params.get('tab')) ?? 'pagar'
+  const [tab, setTabState] = useState<Tab>(fromUrl)
+  // atalho "Cartões" do menu abre esta mesma tela com outra aba: acompanha o endereço
+  useEffect(() => setTabState(fromUrl), [fromUrl])
+  const setTab = (t: Tab) => { setTabState(t); setParams(t === 'pagar' ? {} : { tab: t }, { replace: true }) }
   return (
     <div className="screen narrow">
       <header className="top"><h1>Contas</h1></header>

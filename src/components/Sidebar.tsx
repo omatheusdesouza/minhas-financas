@@ -1,16 +1,21 @@
-import { Link, NavLink } from 'react-router-dom'
-import { NAV_ITEMS, SHORTCUT_HELP } from '../lib/shortcuts'
+import { Link } from 'react-router-dom'
+import type { NavInfo } from '../lib/prefs'
+import { shortcutHelp, type NavShortcut } from '../lib/shortcuts'
 import { useApp } from '../store'
 import { MyAvatar } from './Avatar'
 import { Icon } from './Icon'
 import { Sheet } from './Sheet'
 import { SpaceSwitcher } from './SpaceSwitcher'
 import { useIsAdmin } from './useIsAdmin'
+import { useNav } from './useNav'
+
+const ADMIN: NavInfo[] = [{ id: 'gestor' as NavInfo['id'], to: '/gestor', label: 'Gestor', short: 'Gestor', icon: 'user' }]
 
 /** Menu lateral da versão para computador (no celular fica escondido e vale a barra de baixo). */
 export function Sidebar({ onHelp }: { onHelp: () => void }) {
   const { profile, sync, openEditor, canEdit } = useApp()
   const admin = useIsAdmin()
+  const { menu, activeMenu } = useNav(admin ? ADMIN : [])
   const syncText = !sync ? null
     : sync.state === 'offline' ? 'Sem internet'
       : sync.state === 'syncing' ? 'Sincronizando…'
@@ -32,12 +37,13 @@ export function Sidebar({ onHelp }: { onHelp: () => void }) {
       )}
 
       <nav className="side-nav" aria-label="Navegação principal">
-        {NAV_ITEMS.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.to === '/'} title={`${n.label} (${n.key})`}>
-            <Icon name={n.icon} /> <span className="grow">{n.label}</span> <kbd>{n.key}</kbd>
-          </NavLink>
+        {menu.map((n) => (
+          <Link key={n.id} to={n.to} className={activeMenu === n.id ? 'active' : ''} aria-current={activeMenu === n.id ? 'page' : undefined}
+            title={n.key ? `${n.label} (${n.key})` : n.label}>
+            <Icon name={n.icon} /> <span className="grow">{n.label}</span> {n.key && <kbd>{n.key}</kbd>}
+          </Link>
         ))}
-        {admin && <NavLink to="/gestor" title="Painel do gestor"><Icon name="user" /> <span className="grow">Gestor</span></NavLink>}
+        <Link to="/ajustes/personalizar?aba=navegacao" className="side-customize" title="Escolher e ordenar os itens do menu"><Icon name="edit" size={16} /> Personalizar menu</Link>
       </nav>
 
       <div className="side-foot">
@@ -55,11 +61,11 @@ export function Sidebar({ onHelp }: { onHelp: () => void }) {
   )
 }
 
-export function ShortcutsSheet({ onClose }: { onClose: () => void }) {
+export function ShortcutsSheet({ onClose, items }: { onClose: () => void; items: NavShortcut[] }) {
   return (
     <Sheet title="Atalhos de teclado" onClose={onClose}>
       <ul className="kv shortcuts">
-        {SHORTCUT_HELP.map(([k, label]) => <li key={k}><span>{label}</span><kbd>{k}</kbd></li>)}
+        {shortcutHelp(items).map(([k, label]) => <li key={k}><span>{label}</span><kbd>{k}</kbd></li>)}
       </ul>
     </Sheet>
   )
