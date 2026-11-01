@@ -1105,3 +1105,96 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shado
 .cash-entry-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cash-screen .tx-main .tx-right { margin-right: 4px; }
 .cash-linked { margin: 0; }
+
+/* ---------- Vidro (só nas bordas e nos botões) ----------
+   Bordas: filete de luz em degradê (como a quina de um vidro polido) por cima da borda do cartão.
+   Botões: translúcidos, com reflexo no topo e sombra suave; desfoque do fundo só nos botões flutuantes
+   (em listas o desfoque pesa no celular e não aparece, porque o fundo é liso). O miolo dos cartões continua sólido. */
+:root {
+  --glass-rim: linear-gradient(150deg, rgba(255, 255, 255, .95) 0%, rgba(255, 255, 255, .35) 28%, rgba(232, 224, 210, .5) 62%, rgba(201, 164, 95, .45) 100%);
+  --glass-btn: linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, .38));
+  --glass-btn-edge: rgba(255, 255, 255, .75);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 -1px 0 rgba(11, 42, 60, .05);
+  --glass-drop: 0 6px 18px -10px rgba(11, 42, 60, .35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass-rim: linear-gradient(150deg, rgba(255, 255, 255, .26) 0%, rgba(255, 255, 255, .06) 30%, rgba(255, 255, 255, .03) 60%, rgba(214, 181, 117, .38) 100%);
+    --glass-btn: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .03));
+    --glass-btn-edge: rgba(255, 255, 255, .14);
+    --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 rgba(0, 0, 0, .25);
+    --glass-drop: 0 8px 20px -10px rgba(0, 0, 0, .7);
+  }
+}
+:root[data-theme="dark"] {
+  --glass-rim: linear-gradient(150deg, rgba(255, 255, 255, .26) 0%, rgba(255, 255, 255, .06) 30%, rgba(255, 255, 255, .03) 60%, rgba(214, 181, 117, .38) 100%);
+  --glass-btn: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .03));
+  --glass-btn-edge: rgba(255, 255, 255, .14);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 rgba(0, 0, 0, .25);
+  --glass-drop: 0 8px 20px -10px rgba(0, 0, 0, .7);
+}
+
+/* bordas: linha externa fina + filete de luz por dentro dela (sem mudar o tamanho de nada) */
+.card, .sheet, .totals-bar, .search, .import-drop, .side-profile { position: relative; }
+.card { border-color: color-mix(in srgb, var(--line) 80%, transparent); }
+.card::after, .sheet::after, .totals-bar::after, .side-profile::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: var(--glass-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.card.flush::after { border-radius: calc(var(--radius) - 1px); }
+.card { box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .5); }
+.hero { border-color: color-mix(in srgb, var(--gold) 30%, transparent); box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .12); }
+.hero::after { background: linear-gradient(150deg, rgba(255, 255, 255, .45), rgba(255, 255, 255, .06) 35%, rgba(216, 179, 106, .15) 65%, rgba(216, 179, 106, .6)); }
+
+/* botões: vidro claro (no escuro, vidro fumê) */
+.btn, .icon-btn, .chip-btn, .sm-btn, .pay-btn, .import-amount:hover {
+  background-image: var(--glass-btn);
+  background-color: color-mix(in srgb, var(--surface) 55%, transparent);
+  border-color: var(--glass-btn-edge) !important;
+  box-shadow: var(--glass-hi), var(--glass-drop);
+}
+.pay-btn { border-color: color-mix(in srgb, var(--good) 45%, var(--glass-btn-edge)) !important; }
+.sm-btn { border-color: color-mix(in srgb, var(--warn) 45%, var(--glass-btn-edge)) !important; }
+.segmented {
+  background-color: color-mix(in srgb, var(--surface-2) 75%, transparent);
+  background-image: linear-gradient(180deg, rgba(11, 42, 60, .04), rgba(255, 255, 255, .25));
+  border: 1px solid var(--glass-btn-edge);
+  box-shadow: inset 0 1px 3px rgba(11, 42, 60, .1), inset 0 -1px 0 rgba(255, 255, 255, .5);
+}
+.segmented button.on {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(255, 255, 255, .72)); background-color: var(--surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 1px rgba(11, 42, 60, .06), 0 6px 14px -6px rgba(11, 42, 60, .3);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .segmented { background-image: linear-gradient(180deg, rgba(0, 0, 0, .25), rgba(255, 255, 255, .02)); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .45), inset 0 -1px 0 rgba(255, 255, 255, .05); }
+  :root:not([data-theme="light"]) .segmented button.on { background-image: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .04)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 6px 14px -6px rgba(0, 0, 0, .7); }
+}
+:root[data-theme="dark"] .segmented { background-image: linear-gradient(180deg, rgba(0, 0, 0, .25), rgba(255, 255, 255, .02)); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .45), inset 0 -1px 0 rgba(255, 255, 255, .05); }
+:root[data-theme="dark"] .segmented button.on { background-image: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .04)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 6px 14px -6px rgba(0, 0, 0, .7); }
+.chip-btn.on { background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0)); background-color: var(--accent); border-color: transparent !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), var(--glass-drop); }
+.btn.primary {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 55%);
+  background-color: var(--accent); border-color: color-mix(in srgb, var(--gold) 35%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), inset 0 -1px 0 rgba(0, 0, 0, .2), 0 10px 22px -12px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.btn.danger-fill { background-image: linear-gradient(180deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, 0) 55%); }
+.fab {
+  background-image: radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 55%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent), 0 14px 28px -12px rgba(11, 42, 60, .6);
+}
+@media (min-width: 1024px) {
+  .side-new { background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 55%); }
+}
+
+/* desfoque do fundo só no que flutua por cima do conteúdo */
+.fab, .top .icon-btn, .top .btn, .segmented, .sheet-head .icon-btn, .toast {
+  -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%);
+}
+.toast { background: color-mix(in srgb, var(--text) 82%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 12px 28px -12px rgba(0, 0, 0, .5); }
+.tabbar { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 -10px 30px -18px rgba(11, 42, 60, .35); border-top-color: transparent; }
+.tabbar::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(201, 164, 95, .55), transparent); pointer-events: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tabbar { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 -10px 30px -18px rgba(0, 0, 0, .8); } }
+:root[data-theme="dark"] .tabbar { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 -10px 30px -18px rgba(0, 0, 0, .8); }
+.btn:disabled, .icon-btn:disabled { box-shadow: none; }
