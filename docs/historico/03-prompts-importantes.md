@@ -210,3 +210,14 @@ Resposta ao plano da migration 0010: "Pode".
 
 > Aplique o glass efect no meu app. Apenas nas bordas e botões.
 
+## Plano de pagamento (05–06/11/2026)
+
+> Preciso antes de uma nova metrica. Estou precisando lidar com que pagamento preciso efetuar primeiro, pois recebo em
+> datas diferentes. Preciso criar niveis prioritarios. Quero que analise e crie esse campo de pagamentos recomendados para
+> que eu consiga pagar da melhor forma as contas.
+
+> Não quero efetuar pagamentos parciais, pois acumulam juros maiores exemplo de cartão e tambem que boletos não tem como
+> fazer isso. Preciso que tudo ou eu consigo pagar ou preciso deixar e esperar o proximo dinheiro para juntar e poder pagar.
+> E tambem analisar os dados, se eu recebo no prazo que posso pagar as contas e sobrar esse dinheiro de agora informar o
+> valor que posso sobrar
+

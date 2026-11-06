@@ -128,3 +128,10 @@ O usuário cadastrou as contas e pediu para informar de qual banco é cada cart�
 pagamento pode ser ligado a uma conta do caixa. Débito/Pix ligados descontam sozinhos da conta; a fatura do crédito
 sugere a conta ligada ao pagar (dá para trocar). Aviso antes de ligar uma forma que já tem lançamentos pagos no período.
 
+## 13. Plano de pagamento (05–06/11/2026)
+
+Pedido: saber que conta pagar primeiro, recebendo em datas diferentes, com níveis de prioridade. Feito: aba Contas › Plano,
+quatro níveis (sugeridos pela categoria, ajustáveis), simulação de 45 dias com o Caixa e os ganhos a receber, bloco "Pague
+primeiro" no Início (migration 0011 para guardar a prioridade escolhida). Durante o trabalho o usuário pediu: sem pagamento
+parcial (juros do cartão, boleto não aceita) e mostrar quanto do dinheiro de hoje sobra se os ganhos entrarem no prazo.
+

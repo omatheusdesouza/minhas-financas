@@ -193,3 +193,14 @@ Cada item: **decisão** — motivo.
 - **Desfoque (`backdrop-filter`) só no que flutua** (botão +, barra de baixo, botões do topo, seletores, avisos): em listas
   pesaria no celular sem diferença visível.
 
+## Plano de pagamento (06/11/2026)
+
+- **Prioridade manda:** as contas Essenciais escolhem o dinheiro primeiro, depois Alta (juros/multa), Normal, Flexível.
+- **Pagar com a entrada mais perto do vencimento,** sem passar dele: deixa o dinheiro de hoje livre para o que vence antes.
+  Um pagamento só entra se não deixar faltar dinheiro para os já marcados em nenhuma data seguinte.
+- **Sem pagamento parcial** (pedido do usuário): ou paga inteira ou espera; o que sobra fica guardado para a conta mais
+  importante que falta (as menos importantes não usam esse dinheiro).
+- **Dinheiro livre agora** = menor folga de hoje em diante, limitada ao dinheiro que já existe (ganho previsto para hoje
+  entra no plano, mas não é "livre").
+- Fatura do cartão tem prioridade Alta fixa; ganhos com data passada e não marcados como recebidos ficam de fora (avisado).
+
