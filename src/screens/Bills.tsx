@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CardsTab } from '../components/CardsTab'
+import { PaymentPlan } from '../components/PaymentPlan'
 import { CategorySelect, Field, MoneyInput, PaymentSelect, Segmented, Toggle } from '../components/Fields'
 import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
@@ -14,11 +15,11 @@ import { INCOME_SOURCES, incomeSourceLabel, parseDay } from '../lib/templates'
 import { amt, type AmountType, type IncomeSource, type InstallmentPlan, type Kind, type RecurringBill, type Transaction } from '../lib/types'
 import { useApp, useLoad } from '../store'
 
-type Tab = 'pagar' | 'cartoes' | 'parcelas' | 'fixas'
+type Tab = 'pagar' | 'plano' | 'cartoes' | 'parcelas' | 'fixas'
 
 export function Bills() {
   const [params, setParams] = useSearchParams()
-  const fromUrl = (['pagar', 'cartoes', 'parcelas', 'fixas'] as Tab[]).find((t) => t === params.get('tab')) ?? 'pagar'
+  const fromUrl = (['pagar', 'plano', 'cartoes', 'parcelas', 'fixas'] as Tab[]).find((t) => t === params.get('tab')) ?? 'pagar'
   const [tab, setTabState] = useState<Tab>(fromUrl)
   // atalho "Cartões" do menu abre esta mesma tela com outra aba: acompanha o endereço
   useEffect(() => setTabState(fromUrl), [fromUrl])
@@ -28,11 +29,13 @@ export function Bills() {
       <header className="top"><h1>Contas</h1></header>
       <Segmented value={tab} onChange={setTab} options={[
         { value: 'pagar', label: 'A pagar' },
+        { value: 'plano', label: 'Plano' },
         { value: 'cartoes', label: 'Cartões' },
         { value: 'parcelas', label: 'Parcelas' },
         { value: 'fixas', label: 'Fixas' },
       ]} />
       {tab === 'pagar' && <Upcoming />}
+      {tab === 'plano' && <PaymentPlan />}
       {tab === 'cartoes' && <CardsTab />}
       {tab === 'parcelas' && <Plans />}
       {tab === 'fixas' && <Recurring />}

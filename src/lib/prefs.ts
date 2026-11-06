@@ -4,7 +4,7 @@
  * vale a versão alterada por último (updatedAt).
  */
 
-export type WidgetId = 'saldo' | 'caixa' | 'fixos' | 'limites' | 'meta' | 'reservas' | 'destaques' | 'contas' | 'saude' | 'gastos' | 'ultimos'
+export type WidgetId = 'saldo' | 'caixa' | 'pagar' | 'fixos' | 'limites' | 'meta' | 'reservas' | 'destaques' | 'contas' | 'saude' | 'gastos' | 'ultimos'
 
 export interface WidgetInfo {
   id: WidgetId
@@ -19,6 +19,7 @@ export interface WidgetInfo {
 export const WIDGETS: WidgetInfo[] = [
   { id: 'saldo', label: 'Saldo previsto do mês', desc: 'Ganhos, gastos e quanto sobra', icon: '💰', col: 'main' },
   { id: 'caixa', label: 'Caixa', desc: 'Quanto você tem nas contas agora', icon: '🏦', col: 'main' },
+  { id: 'pagar', label: 'Pague primeiro', desc: 'As próximas contas do plano de pagamento, por prioridade', icon: '🥇', col: 'main' },
   { id: 'fixos', label: 'Renda e gastos fixos', desc: 'Quanto entra e sai todo mês', icon: '🔁', col: 'main' },
   { id: 'limites', label: 'Atenção aos limites', desc: 'Categorias perto ou acima do limite (só aparece quando há)', icon: '⚠️', col: 'side' },
   { id: 'meta', label: 'Meta de economia', desc: 'Progresso da meta principal', icon: '🎯', col: 'side' },
@@ -30,7 +31,7 @@ export const WIDGETS: WidgetInfo[] = [
   { id: 'ultimos', label: 'Últimos lançamentos', desc: 'Os 6 mais recentes do mês', icon: '📋', col: 'main' },
 ]
 
-export type NavId = 'inicio' | 'caixa' | 'lancamentos' | 'contas' | 'relatorios' | 'metas' | 'reservas' | 'cartoes' | 'importar' | 'familia' | 'ajustes'
+export type NavId = 'inicio' | 'caixa' | 'plano' | 'lancamentos' | 'contas' | 'relatorios' | 'metas' | 'reservas' | 'cartoes' | 'importar' | 'familia' | 'ajustes'
 
 export interface NavInfo {
   id: NavId
@@ -49,6 +50,7 @@ export const NAV: NavInfo[] = [
   { id: 'metas', to: '/metas', label: 'Metas', short: 'Metas', icon: 'target' },
   { id: 'reservas', to: '/reservas', label: 'Reservas', short: 'Reservas', icon: 'safe' },
   { id: 'caixa', to: '/caixa', label: 'Caixa', short: 'Caixa', icon: 'wallet' },
+  { id: 'plano', to: '/contas?tab=plano', label: 'Plano de pagamento', short: 'Plano', icon: 'target' },
   { id: 'cartoes', to: '/contas?tab=cartoes', label: 'Cartões e faturas', short: 'Cartões', icon: 'card' },
   { id: 'importar', to: '/lancamentos/importar', label: 'Importar extrato', short: 'Importar', icon: 'download' },
   { id: 'familia', to: '/ajustes/familia', label: 'Família', short: 'Família', icon: 'user' },
@@ -60,7 +62,7 @@ export const TAB_SLOTS = 3
 export const DEFAULT_TABS: NavId[] = ['lancamentos', 'contas', 'relatorios']
 /** Menu lateral: Início e Ajustes não podem ser escondidos. */
 export const LOCKED_MENU: NavId[] = ['inicio', 'ajustes']
-export const DEFAULT_MENU_HIDDEN: NavId[] = ['cartoes', 'importar', 'familia']
+export const DEFAULT_MENU_HIDDEN: NavId[] = ['plano', 'cartoes', 'importar', 'familia']
 
 export interface OrderedPrefs<T extends string> { order: T[]; hidden: T[] }
 

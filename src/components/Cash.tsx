@@ -21,18 +21,20 @@ export interface CashData {
 }
 
 /** Saldos do caixa (contas, lançamentos pagos desde o saldo inicial, transferências e ajustes). */
+export async function loadCash(paymentMethods: PaymentMethod[]): Promise<CashData> {
+  const ok = await cashAvailable()
+  const accounts = paymentMethods.filter(isAccount)
+  const first = earliestOpening(accounts)
+  if (!ok || !first) return { ok, accounts: [], total: 0, txs: [], moves: [] }
+  // a fatura e as contas pagas com atraso têm a data diferente do pagamento: busca uma janela folgada
+  const [txs, moves] = await Promise.all([api.listTransactions(addDays(first, -400), addDays(today(), 400)), api.listMoves()])
+  const list = balances(paymentMethods, txs, moves)
+  return { ok, accounts: list, total: cashTotal(list), txs, moves }
+}
+
 export function useCash() {
   const { paymentMethods } = useApp()
-  return useLoad<CashData>(async () => {
-    const ok = await cashAvailable()
-    const accounts = paymentMethods.filter(isAccount)
-    const first = earliestOpening(accounts)
-    if (!ok || !first) return { ok, accounts: [], total: 0, txs: [], moves: [] }
-    // a fatura e as contas pagas com atraso têm a data diferente do pagamento: busca uma janela folgada
-    const [txs, moves] = await Promise.all([api.listTransactions(addDays(first, -400), addDays(today(), 400)), api.listMoves()])
-    const list = balances(paymentMethods, txs, moves)
-    return { ok, accounts: list, total: cashTotal(list), txs, moves }
-  }, [paymentMethods])
+  return useLoad<CashData>(() => loadCash(paymentMethods), [paymentMethods])
 }
 
 /** Bloco "Caixa" do Início. */

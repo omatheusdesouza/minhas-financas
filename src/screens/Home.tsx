@@ -5,6 +5,7 @@ import { Donut, ScoreRing, SliceList } from '../components/Charts'
 import { BillRow, billItems } from '../components/Invoice'
 import { MovementSheet } from '../components/ReserveSheets'
 import { CashCard } from '../components/Cash'
+import { PayFirstCard } from '../components/PaymentPlan'
 import { ReservesCard } from './Reserves'
 import { Icon } from '../components/Icon'
 import { PeriodPicker, initialPeriod } from '../components/PeriodPicker'
@@ -132,6 +133,7 @@ export function Home() {
     </section>
     ),
     caixa: <CashCard />,
+    pagar: <PayFirstCard />,
     fixos: (
     <section className="stat-grid">
       <Link to="/contas?tab=fixas" className="card stat">

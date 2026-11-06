@@ -16,11 +16,13 @@ import { Sheet } from '../components/Sheet'
 import { api } from '../lib/api'
 import { moneyInput, parseMoney, money } from '../lib/format'
 import { fmt, today } from '../lib/dates'
+import { priorityAvailable } from '../lib/features'
+import { PRIORITY, type Priority } from '../lib/priority'
 import { updateApp } from '../lib/updates'
 import { passwordProblem } from '../lib/security'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
 import type { Category, Kind, Nature, PaymentMethod } from '../lib/types'
-import { useApp } from '../store'
+import { useApp, useLoad } from '../store'
 import { useIsAdmin } from '../components/useIsAdmin'
 
 export function Settings() {
@@ -209,6 +211,8 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
   const [parentId, setParentId] = useState<string | null>(cat.parent_id ?? null)
   const [budget, setBudget] = useState(moneyInput(cat.monthly_budget))
   const [archived, setArchived] = useState(cat.archived ?? false)
+  const [priority, setPriority] = useState<number | null>(cat.priority ?? null)
+  const { data: priorityOk } = useLoad(priorityAvailable, [])
   const hasChildren = cat.id ? idx.children(cat.id, true).length > 0 : false
   const parents = idx.roots(kind, true).filter((r) => r.id !== cat.id)
 
@@ -219,6 +223,7 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
       await api.saveCategory({
         ...(cat as Category), kind, name: name.trim(), icon, color, nature, parent_id: parentId,
         monthly_budget: b && b > 0 ? b : null, archived,
+        ...(priorityOk ? { priority } : {}),
         sort_order: cat.sort_order ?? (parentId ? idx.children(parentId, true).length : idx.roots(kind, true).length),
       })
       await reloadMeta()
@@ -283,6 +288,14 @@ function CategoryEditor({ cat, onClose }: { cat: Partial<Category>; onClose: () 
           <Field label="Limite de gasto por mês" hint="Opcional. Avisamos quando passar.">
             <MoneyInput value={budget} onChange={setBudget} />
           </Field>
+          {priorityOk && (
+            <Field label="Prioridade ao pagar" hint={priority ? PRIORITY[priority as Priority].desc : 'O app sugere pelo nome da categoria. Usado em Contas › Plano.'}>
+              <select value={priority ?? ''} onChange={(e) => setPriority(e.target.value ? Number(e.target.value) : null)}>
+                <option value="">Automática (sugestão do app)</option>
+                {([1, 2, 3, 4] as Priority[]).map((p) => <option key={p} value={p}>{PRIORITY[p].label}</option>)}
+              </select>
+            </Field>
+          )}
         </>
       )}
       <Toggle checked={archived} onChange={setArchived} label="Arquivada (some das opções, mas mantém o histórico)" />
