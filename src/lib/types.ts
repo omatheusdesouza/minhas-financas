@@ -14,6 +14,8 @@ export interface Category {
   monthly_budget: number | null
   sort_order: number
   archived: boolean
+  /** prioridade ao pagar (1 Essencial … 4 Flexível; migration 0011); vazio = sugestão do app */
+  priority?: number | null
 }
 
 export interface PaymentMethod {
@@ -66,6 +68,8 @@ export interface Transaction {
   purchase_date?: string | null
   /** de qual conta saiu (ou em qual entrou) o dinheiro, quando a forma de pagamento não é uma conta (0009) */
   paid_from?: string | null
+  /** prioridade ao pagar só deste lançamento (migration 0011) */
+  priority?: number | null
 }
 
 export interface InstallmentPlan {
@@ -96,6 +100,8 @@ export interface RecurringBill {
   active: boolean
   generated_until: string | null
   notes: string | null
+  /** prioridade ao pagar, para todos os meses (migration 0011) */
+  priority?: number | null
 }
 
 export interface NewInstallmentPlan {

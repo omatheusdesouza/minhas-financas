@@ -22,3 +22,5 @@ export const cardsAvailable = () => schemaAtLeast('0007')
 export const cashAvailable = () => schemaAtLeast('0009')
 /** Cartão ou forma de pagamento ligado a uma conta (migration 0010). */
 export const linkAvailable = () => schemaAtLeast('0010')
+/** Prioridade dos pagamentos escolhida pela pessoa (migration 0011). */
+export const priorityAvailable = () => schemaAtLeast('0011')
